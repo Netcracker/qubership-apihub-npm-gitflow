@@ -13,5 +13,5 @@ on:
       - feature/*
 
 jobs:
-  run-npm-ci:
+  call-npm-ci-cd-workflow:
     uses: netcracker/qubership-apihub-ci/.github/workflows/npm-ci.yaml@main
