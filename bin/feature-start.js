@@ -47,17 +47,17 @@ git
     .show([isLernaProject ? "develop:lerna.json" : "develop:package.json"], (err, data) => {
         handleError(err);
         developVersion = JSON.parse(data)["version"];
-        featureVersion = developVersion + "-" + featureName;
+        featureVersion = developVersion.match(/\d+\.\d+\.\d+/)[0] + "-feature-" + featureName + ".0";
     })
     //Change version at feature branch (autocommit)
     .exec(() => {
         let execPromise;
         if (isLernaProject) {
             console.log("Update versions for lerna project");
-            execPromise = executeCommand(`lerna version ${featureVersion} --message \"RE-42 update version to ${featureVersion}\" --no-push --yes`);
+            execPromise = executeCommand(`lerna version ${featureVersion} --message \"chore: update version to ${featureVersion}\" --no-push --no-git-tag-version --yes`);
         } else {
             console.log("Update versions for project");
-            execPromise = executeCommand("npm version -m \"RE-42 update version to " + featureVersion + "\" " + featureVersion);
+            execPromise = executeCommand("npm version --no-git-tag-version -m \"chore: update version to %s\" " + featureVersion);
         }
         execPromise.then(() => {
             git  //Push

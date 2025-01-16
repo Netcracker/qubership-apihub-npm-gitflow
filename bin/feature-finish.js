@@ -109,7 +109,7 @@ function changeLernaVersion(version) {
 
 function commitAndPush(branch) {
     return new Promise((resolve) => {
-        git.raw(["commit", "-a", "--no-edit", "-m RE-42 Merge from " + branch + " to develop"], (err) => {
+        git.raw(["commit", "-a", "--no-edit", "-m chore: merge from " + branch + " to develop"], (err) => {
             handleError(err);
             console.log("Commit!")
         }).push("origin", "develop", (err) => {
