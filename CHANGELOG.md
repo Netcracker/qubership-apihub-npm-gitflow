@@ -1,3 +1,10 @@
+## 2.0.0
+- change commit messages to conform to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+- remove git tag creation for `feature` branches
+- add prerelease suffixes for package version in `release` and `feature` branches
+- BREAKING CHANGE: single `release` branch assumed
+- BREAKING CHANGE: package version prerelease suffix changed to `-dev` for `develop` branche
+
 ## 1.0.12 - 2024-03-01
 
 ### New
