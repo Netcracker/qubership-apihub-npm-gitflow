@@ -13,5 +13,5 @@ on:
       - feature/*
 
 jobs:
-  call-npm-ci-cd-workflow:
+  call-frontend-ci-workflow:
     uses: netcracker/qubership-apihub-ci/.github/workflows/frontend-ci.yaml@main
