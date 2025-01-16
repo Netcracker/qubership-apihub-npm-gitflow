@@ -28,12 +28,15 @@ let releaseBranch;
 let version;
 
 pullAll()
-    .then(() => getCurrentBranchName())
-    .then(branch => {
-        if (branch.search("release") === -1) handleError("You are trying to release not release branch: " + branch);
-        this.releaseBranch = branch;
-        this.version = branch.match(/\d+\.\d+\.\d+/)[0];
-    })
+    .then(() => switchToBranch('release'))
+    .then(() => {
+        //Get version in release branch
+        git.show([isLernaProject ? "release:lerna.json" : "release:package.json"], (err, data) => {
+            handleError(err);
+            this.version = JSON.parse(data)["version"].match(/\d+\.\d+\.\d+/)[0]
+            this.releaseBranch = 'release'        
+        })
+    })    
   .then(() => switchToBranch('main'))
     .then(() => mergeFromBranch(this.releaseBranch))
   .then(() => isLernaProject ? changeLernaProjectVersion(this.version, 'main') : changePackageJsonVersion(this.version))
@@ -43,7 +46,7 @@ pullAll()
     .then(() => switchToBranch("develop"))
     .then(() => mergeFromBranch(this.releaseBranch))
     .then(() => isLernaProject ? getIncrementedLernaVersion() : getIncrementedPackageJsonVersion())
-    .then(incVersion => isLernaProject ? changeLernaProjectVersion(incVersion + "-develop.0", "develop") : changePackageJsonVersion(incVersion + "-develop.0"))
+    .then(incVersion => isLernaProject ? changeLernaProjectVersion(incVersion + "-dev.0", "develop") : changePackageJsonVersion(incVersion + "-dev.0"))
     .then(() => commit(this.version))
     .then(() => push())
     .then(() => deleteBranch(this.releaseBranch));
@@ -91,6 +94,7 @@ function mergeFromBranch(branch) {
 
 function changePackageJsonVersion(version) {
     return new Promise((resolve) => {
+        //TODO: use npm to set version
         packageJsonFile.version = version;
         fs.writeFile(packageJsonPath, JSON.stringify(packageJsonFile, null, 2), err => {
             handleError(err);
@@ -100,9 +104,9 @@ function changePackageJsonVersion(version) {
     });
 }
 
-function changeLernaProjectVersion(version, brunchName) {
+function changeLernaProjectVersion(version, branchName) {
     return new Promise((resolve) => {
-        exec(`lerna version ${version} --no-push --no-git-tag-version --allow-branch ${brunchName} --yes`, err => {
+        exec(`lerna version ${version} --no-push --no-git-tag-version --allow-branch ${branchName} --yes`, err => {
             handleError(err);
             resolve();
         });
@@ -111,7 +115,7 @@ function changeLernaProjectVersion(version, brunchName) {
 
 function createAndPushTag(version) {
     return new Promise(resolve => {
-        git.raw(["tag", "-a", version, "-m Release :" + version], (err) => {
+        git.raw(["tag", "-a", version, "-m chore: release :" + version], (err) => {
             handleError(err);
             console.log("Git tag. Version: " + version);
         }).raw(["push", "origin", version], (err) => {
@@ -124,7 +128,7 @@ function createAndPushTag(version) {
 
 function commit(message) {
     return new Promise((resolve) => {
-        git.raw(["commit", "-a", "--no-edit", "-m RE-42 Release: " + message], (err) => {
+        git.raw(["commit", "-a", "--no-edit", "-m chore: release: " + message], (err) => {
             handleError(err);
             console.log("Commit!");
             resolve();

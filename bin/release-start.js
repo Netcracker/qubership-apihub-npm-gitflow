@@ -27,10 +27,11 @@ const packageJsonFile = require(packageJsonPath);
 
 let releaseVersion;
 
+//TODO: add check that release is already in progress
 switchToDevelopAndPull()
     .then(() => checkPackageJsonVersions())
     .then(() => isLernaProject ? getLernaVersion() : getPackageJsonVersion())
-    .then(releaseVersion => this.releaseVersion = releaseVersion)
+    .then(releaseVersion => this.releaseVersion = releaseVersion + '-next.0')
     .then(() => createReleaseBranch(this.releaseVersion))
     .then(() => isLernaProject ? changeLernaProjectVersion(this.releaseVersion) : changePackageJsonVersion(this.releaseVersion))
     .then(() => commitAndPushRelease(this.releaseVersion));
@@ -60,7 +61,7 @@ function getLernaVersion() {
 
 function createReleaseBranch(releaseVersion) {
     return new Promise(resolve => {
-        git.raw(["checkout", "-b", "release/" + releaseVersion, "develop"], err => {
+        git.raw(["checkout", "-b", "release", "develop"], err => {
             handleError(err);
             console.log("Create release branch with version: " + releaseVersion);
             resolve();
@@ -71,6 +72,7 @@ function createReleaseBranch(releaseVersion) {
 function changePackageJsonVersion(version) {
     return new Promise((resolve) => {
         packageJsonFile.version = version;
+        //TODO: use npm to set version
         fs.writeFile(packageJsonPath, JSON.stringify(packageJsonFile, null, 2), err => {
             handleError(err);
             console.log("Version of package.json changed to " + version);
@@ -90,10 +92,10 @@ function changeLernaProjectVersion(version) {
 
 function commitAndPushRelease(releaseVersion) {
     return new Promise((resolve) => {
-        git.raw(["commit", "-a", "--no-edit", "-m RE-42 Release start. Version: " + releaseVersion], (err) => {
+        git.raw(["commit", "-a", "--no-edit", "-m chore: release start, version: " + releaseVersion], (err) => {
             handleError(err);
             console.log("Commit!")
-        }).raw(["push", "--set-upstream", "origin", "release/" + releaseVersion], (err) => {
+        }).raw(["push", "--set-upstream", "origin", "release"], (err) => {
             handleError(err);
             console.log("Push!");
             resolve();
@@ -127,7 +129,7 @@ function hasNotStableDependencies() {
     let notStableDependencies;
     for (let property in dependencies) {
         const version = dependencies[property];
-        if ((!version.match(/^\d+\.\d+\.\d/) || version.includes("develop")) && (!version.match(/^git:|^git\+https:|^git\+http:|^git\+ssh:|^git\+file:/))) {
+        if ((!version.match(/^\d+\.\d+\.\d/) || version.includes("dev")) && (!version.match(/^git:|^git\+https:|^git\+http:|^git\+ssh:|^git\+file:/))) {
             notStableDependencies = true;
             console.error("Not stable: " + property + ":" + version);
         }
