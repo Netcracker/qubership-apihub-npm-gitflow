@@ -54,7 +54,12 @@ git
         let execPromise;
         if (isLernaProject) {
             console.log("Update versions for lerna project");
-            execPromise = executeCommand(`lerna version ${featureVersion} --message \"chore: update version to ${featureVersion}\" --no-push --no-git-tag-version --yes`);
+            execPromise = executeCommand(`lerna version ${featureVersion} --message \"chore: update version to ${featureVersion}\" --no-push --no-git-tag-version --yes`)
+                .then(() => {
+                    // Add git commit after lerna updates the versions
+                    console.log("Commit updated version");
+                    return executeCommand('git commit -a -m "chore: update version to ' + featureVersion + '"');
+                });
         } else {
             console.log("Update versions for project");
             execPromise = executeCommand("npm version --no-git-tag-version -m \"chore: update version to %s\" " + featureVersion);
