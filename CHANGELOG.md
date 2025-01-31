@@ -1,3 +1,9 @@
+## 2.1.0
+- use release branch without version in name
+- merge updated version to develop from main during release
+- commit bumped version in lerna projects
+- do not update version for private packages in lerna repositories
+
 ## 2.0.0
 - change commit messages to conform to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
 - remove git tag creation for `feature` branches
