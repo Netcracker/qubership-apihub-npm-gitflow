@@ -100,7 +100,7 @@ function changePackageJsonVersion(version) {
 
 function changeLernaVersion(version) {
     return new Promise((resolve) => {
-        exec(`lerna version ${version} --no-push --no-git-tag-version --yes`, err => {
+        exec(`lerna version ${version} --no-push --no-private --no-git-tag-version --yes`, err => {
             handleError(err);
             resolve();
         });

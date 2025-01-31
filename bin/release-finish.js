@@ -44,7 +44,7 @@ pullAll()
     .then(() => createAndPushTag(this.version))
     .then(() => push())
     .then(() => switchToBranch("develop"))
-    .then(() => mergeFromBranch(this.releaseBranch))
+    .then(() => mergeFromBranch('main'))
     .then(() => isLernaProject ? getIncrementedLernaVersion() : getIncrementedPackageJsonVersion())
     .then(incVersion => isLernaProject ? changeLernaProjectVersion(incVersion + "-dev.0", "develop") : changePackageJsonVersion(incVersion + "-dev.0"))
     .then(() => commit(this.version))
@@ -106,7 +106,7 @@ function changePackageJsonVersion(version) {
 
 function changeLernaProjectVersion(version, branchName) {
     return new Promise((resolve) => {
-        exec(`lerna version ${version} --no-push --no-git-tag-version --allow-branch ${branchName} --yes`, err => {
+        exec(`lerna version ${version} --no-push --no-private --no-git-tag-version --allow-branch ${branchName} --yes`, err => {
             handleError(err);
             resolve();
         });
