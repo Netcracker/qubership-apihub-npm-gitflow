@@ -148,7 +148,7 @@ function handleError(err) {
 
 function updateDistTagDependenciesToNext(packageJson) {
     const dependencyTypes = ['dependencies', 'devDependencies', 'peerDependencies'];
-    let hasUpdates = false;
+    let updatedPackages = [];
     
     dependencyTypes.forEach(type => {
         if (packageJson[type]) {
@@ -156,26 +156,26 @@ function updateDistTagDependenciesToNext(packageJson) {
                 if (version === 'dev') {
                     packageJson[type][pkg] = 'next';
                     console.log(`Updated ${pkg} from dev to next in ${type}`);
-                    hasUpdates = true;
+                    updatedPackages.push(pkg);
                 }
             });
         }
     });
     
-    return hasUpdates;
+    return updatedPackages;
 }
 
 function updatePackageJsonDistTagDependenciesToNext() {
     return new Promise((resolve) => {
-        const updated = updateDistTagDependenciesToNext(packageJsonFile);
-        if (updated) {
+        const updatedPackages = updateDistTagDependenciesToNext(packageJsonFile);
+        if (updatedPackages.length > 0) {
             fs.writeFile(packageJsonPath, JSON.stringify(packageJsonFile, null, 2), err => {
                 handleError(err);
                 console.log("Updated dependencies from @dev to @next");
-                resolve();
+                resolve(updatedPackages);
             });
         } else {
-            resolve();
+            resolve([]);
         }
     });
 }
@@ -189,22 +189,23 @@ function updateLernaPackagesDistTagDependenciesToNext() {
             }
             
             const packages = JSON.parse(stdout);
-            let hasUpdates = false;
+            let allUpdatedPackages = [];
             
             packages.forEach(pkg => {
                 const packagePath = path.join(pkg.location, 'package.json');
                 const packageJson = require(packagePath);
                 
-                if (updateDistTagDependenciesToNext(packageJson)) {
+                const updatedPackages = updateDistTagDependenciesToNext(packageJson);
+                if (updatedPackages.length > 0) {
                     fs.writeFileSync(packagePath, JSON.stringify(packageJson, null, 2));
-                    hasUpdates = true;
+                    allUpdatedPackages = [...allUpdatedPackages, ...updatedPackages];
                 }
             });
             
-            if (hasUpdates) {
+            if (allUpdatedPackages.length > 0) {
                 console.log("Updated dependencies from @dev to @next in all packages");
             }
-            resolve();
+            resolve(allUpdatedPackages);
         });
     });
 }
@@ -215,12 +216,17 @@ function updateDistTagsDependenciesAndLockFiles() {
             ? updateLernaPackagesDistTagDependenciesToNext() 
             : updatePackageJsonDistTagDependenciesToNext();
             
-        updatePromise.then(() => {
-            exec('npm install', (err) => {
-                handleError(err);
-                console.log("Dependencies installed and lock files updated");
+        updatePromise.then((updatedPackages) => {
+            if (updatedPackages.length > 0) {
+                const uniquePackages = [...new Set(updatedPackages)];
+                exec(`npm update ${uniquePackages.join(' ')}`, (err) => {
+                    handleError(err);
+                    console.log("Updated packages and lock files updated");
+                    resolve();
+                });
+            } else {
                 resolve();
-            });
+            }
         });
     });
 }
