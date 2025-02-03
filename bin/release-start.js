@@ -34,6 +34,7 @@ switchToDevelopAndPull()
     .then(releaseVersion => this.releaseVersion = releaseVersion + '-next.0')
     .then(() => createReleaseBranch(this.releaseVersion))
     .then(() => isLernaProject ? changeLernaProjectVersion(this.releaseVersion) : changePackageJsonVersion(this.releaseVersion))
+    .then(() => isLernaProject ? updateLernaPackagesDistTagDependenciesToNext() : updatePackageJsonDistTagDependenciesToNext())
     .then(() => commitAndPushRelease(this.releaseVersion));
 
 function switchToDevelopAndPull() {
@@ -143,4 +144,67 @@ function handleError(err) {
         console.log(err);
         process.exit(1);
     }
+}
+
+function updateDistTagDependenciesToNext(packageJson) {
+    const dependencyTypes = ['dependencies', 'devDependencies', 'peerDependencies'];
+    let hasUpdates = false;
+    
+    dependencyTypes.forEach(type => {
+        if (packageJson[type]) {
+            Object.entries(packageJson[type]).forEach(([pkg, version]) => {
+                if (version.includes('@dev')) {
+                    packageJson[type][pkg] = version.replace('@dev', '@next');
+                    console.log(`Updated ${pkg} from @dev to @next in ${type}`);
+                    hasUpdates = true;
+                }
+            });
+        }
+    });
+    
+    return hasUpdates;
+}
+
+function updatePackageJsonDistTagDependenciesToNext() {
+    return new Promise((resolve) => {
+        const updated = updateDistTagDependenciesToNext(packageJsonFile);
+        if (updated) {
+            fs.writeFile(packageJsonPath, JSON.stringify(packageJsonFile, null, 2), err => {
+                handleError(err);
+                console.log("Updated dependencies from @dev to @next");
+                resolve();
+            });
+        } else {
+            resolve();
+        }
+    });
+}
+
+function updateLernaPackagesDistTagDependenciesToNext() {
+    return new Promise((resolve) => {
+        exec('lerna list --json', (err, stdout) => {
+            if (err) {
+                handleError(err);
+                return;
+            }
+            
+            const packages = JSON.parse(stdout);
+            let hasUpdates = false;
+            
+            packages.forEach(pkg => {
+                const packagePath = path.join(pkg.location, 'package.json');
+                const packageJson = require(packagePath);
+                
+                if (updateDistTagDependenciesToNext(packageJson)) {
+                    fs.writeFileSync(packagePath, JSON.stringify(packageJson, null, 2));
+                    hasUpdates = true;
+                }
+            });
+            
+            if (hasUpdates) {
+                console.log("Updated dependencies from @dev to @next in all packages");
+            }
+            resolve();
+        });
+    });
 }
