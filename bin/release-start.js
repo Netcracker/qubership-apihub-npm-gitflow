@@ -34,7 +34,7 @@ switchToDevelopAndPull()
     .then(releaseVersion => this.releaseVersion = releaseVersion + '-next.0')
     .then(() => createReleaseBranch(this.releaseVersion))
     .then(() => isLernaProject ? changeLernaProjectVersion(this.releaseVersion) : changePackageJsonVersion(this.releaseVersion))
-    .then(() => isLernaProject ? updateLernaPackagesDistTagDependenciesToNext() : updatePackageJsonDistTagDependenciesToNext())
+    .then(() => updateDistTagsDependenciesAndLockFiles())
     .then(() => commitAndPushRelease(this.releaseVersion));
 
 function switchToDevelopAndPull() {
@@ -153,9 +153,9 @@ function updateDistTagDependenciesToNext(packageJson) {
     dependencyTypes.forEach(type => {
         if (packageJson[type]) {
             Object.entries(packageJson[type]).forEach(([pkg, version]) => {
-                if (version.includes('@dev')) {
-                    packageJson[type][pkg] = version.replace('@dev', '@next');
-                    console.log(`Updated ${pkg} from @dev to @next in ${type}`);
+                if (version === 'dev') {
+                    packageJson[type][pkg] = 'next';
+                    console.log(`Updated ${pkg} from dev to next in ${type}`);
                     hasUpdates = true;
                 }
             });
@@ -205,6 +205,22 @@ function updateLernaPackagesDistTagDependenciesToNext() {
                 console.log("Updated dependencies from @dev to @next in all packages");
             }
             resolve();
+        });
+    });
+}
+
+function updateDistTagsDependenciesAndLockFiles() {
+    return new Promise((resolve) => {
+        const updatePromise = isLernaProject 
+            ? updateLernaPackagesDistTagDependenciesToNext() 
+            : updatePackageJsonDistTagDependenciesToNext();
+            
+        updatePromise.then(() => {
+            exec('npm install', (err) => {
+                handleError(err);
+                console.log("Dependencies installed and lock files updated");
+                resolve();
+            });
         });
     });
 }
