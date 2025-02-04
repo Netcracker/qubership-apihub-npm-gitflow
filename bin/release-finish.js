@@ -29,6 +29,7 @@ let version;
 
 pullAll()
     .then(() => switchToBranch('release'))
+    .then(() => validateDependencies())
     .then(() => {
         //Get version in release branch
         git.show([isLernaProject ? "release:lerna.json" : "release:package.json"], (err, data) => {
@@ -37,9 +38,9 @@ pullAll()
             this.releaseBranch = 'release'        
         })
     })    
-  .then(() => switchToBranch('main'))
+    .then(() => switchToBranch('main'))
     .then(() => mergeFromBranch(this.releaseBranch))
-  .then(() => isLernaProject ? changeLernaProjectVersion(this.version, 'main') : changePackageJsonVersion(this.version))
+    .then(() => isLernaProject ? changeLernaProjectVersion(this.version, 'main') : changePackageJsonVersion(this.version))
     .then(() => commit(this.version))
     .then(() => createAndPushTag(this.version))
     .then(() => push())
@@ -179,4 +180,41 @@ function handleError(err) {
         console.log(err);
         process.exit(1);
     }
+}
+
+function validateDependencies() {
+    return new Promise((resolve, reject) => {
+        const packageJson = require(packageJsonPath);
+        const invalidTags = ['dev', 'next'];
+        
+        const dependencies = {
+            ...packageJson.dependencies,
+            ...packageJson.devDependencies,
+            ...packageJson.peerDependencies
+        };
+
+        const invalidDeps = [];
+        
+        for (const [dep, version] of Object.entries(dependencies)) {
+            if (typeof version === 'string') {
+                // Check for invalid tags
+                if (invalidTags.some(tag => version === tag)) {
+                    invalidDeps.push(`${dep}@${version}`);
+                }
+                // Check for feature branches
+                if (version.startsWith('feature')) {
+                    invalidDeps.push(`${dep}@${version}`);
+                }
+            }
+        }
+
+        if (invalidDeps.length > 0) {
+            const errorMessage = `Cannot proceed with release. Found invalid dependency versions:\n${invalidDeps.join('\n')}`;
+            console.error(errorMessage);
+            reject(new Error(errorMessage));
+        }
+        
+        console.log('Dependencies validation passed');
+        resolve();
+    });
 }
