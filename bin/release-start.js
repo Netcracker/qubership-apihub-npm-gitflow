@@ -34,7 +34,7 @@ switchToDevelopAndPull()
     .then(releaseVersion => this.releaseVersion = releaseVersion + '-next.0')
     .then(() => createReleaseBranch(this.releaseVersion))
     .then(() => isLernaProject ? changeLernaProjectVersion(this.releaseVersion) : changePackageJsonVersion(this.releaseVersion))
-    .then(() => updateDistTagsDependenciesAndLockFiles())
+    .then(() => updateDistTagsDependenciesAndLockFiles(version => version === 'dev', 'next'))
     .then(() => commitAndPushRelease(this.releaseVersion));
 
 function switchToDevelopAndPull() {
@@ -146,16 +146,16 @@ function handleError(err) {
     }
 }
 
-function updateDistTagDependenciesToNext(packageJson) {
+function updateDistTagDependencies(packageJson, versionPredicate, newVersion) {
     const dependencyTypes = ['dependencies', 'devDependencies', 'peerDependencies'];
     let updatedPackages = [];
     
     dependencyTypes.forEach(type => {
         if (packageJson[type]) {
             Object.entries(packageJson[type]).forEach(([pkg, version]) => {
-                if (version === 'dev') {
-                    packageJson[type][pkg] = 'next';
-                    console.log(`Updated ${pkg} from dev to next in ${type}`);
+                if (versionPredicate(version)) {
+                    packageJson[type][pkg] = newVersion;
+                    console.log(`Updated ${pkg} from ${version} to ${newVersion} in ${type}`);
                     updatedPackages.push(pkg);
                 }
             });
@@ -165,13 +165,17 @@ function updateDistTagDependenciesToNext(packageJson) {
     return updatedPackages;
 }
 
-function updatePackageJsonDistTagDependenciesToNext() {
+function updatePackageJsonDistTagDependencies(versionPredicate, newVersion) {
     return new Promise((resolve) => {
-        const updatedPackages = updateDistTagDependenciesToNext(packageJsonFile);
+        const updatedPackages = updateDistTagDependencies(
+            packageJsonFile,
+            versionPredicate,
+            newVersion
+        );
         if (updatedPackages.length > 0) {
             fs.writeFile(packageJsonPath, JSON.stringify(packageJsonFile, null, 2), err => {
                 handleError(err);
-                console.log("Updated dependencies from @dev to @next");
+                console.log(`Updated dependencies matching predicate to ${newVersion}`);
                 resolve(updatedPackages);
             });
         } else {
@@ -180,7 +184,7 @@ function updatePackageJsonDistTagDependenciesToNext() {
     });
 }
 
-function updateLernaPackagesDistTagDependenciesToNext() {
+function updateLernaPackagesDistTagDependencies(versionPredicate, newVersion) {
     return new Promise((resolve) => {
         exec('lerna list --json', (err, stdout) => {
             if (err) {
@@ -195,7 +199,11 @@ function updateLernaPackagesDistTagDependenciesToNext() {
                 const packagePath = path.join(pkg.location, 'package.json');
                 const packageJson = require(packagePath);
                 
-                const updatedPackages = updateDistTagDependenciesToNext(packageJson);
+                const updatedPackages = updateDistTagDependencies(
+                    packageJson,
+                    versionPredicate,
+                    newVersion
+                );
                 if (updatedPackages.length > 0) {
                     fs.writeFileSync(packagePath, JSON.stringify(packageJson, null, 2));
                     allUpdatedPackages = [...allUpdatedPackages, ...updatedPackages];
@@ -203,25 +211,25 @@ function updateLernaPackagesDistTagDependenciesToNext() {
             });
             
             if (allUpdatedPackages.length > 0) {
-                console.log("Updated dependencies from @dev to @next in all packages");
+                console.log(`Updated dependencies matching predicate to ${newVersion} in all packages`);
             }
             resolve(allUpdatedPackages);
         });
     });
 }
 
-function updateDistTagsDependenciesAndLockFiles() {
+function updateDistTagsDependenciesAndLockFiles(versionPredicate, newVersion) {
     return new Promise((resolve) => {
         const updatePromise = isLernaProject 
-            ? updateLernaPackagesDistTagDependenciesToNext() 
-            : updatePackageJsonDistTagDependenciesToNext();
+            ? updateLernaPackagesDistTagDependencies(versionPredicate, newVersion) 
+            : updatePackageJsonDistTagDependencies(versionPredicate, newVersion);
             
         updatePromise.then((updatedPackages) => {
             if (updatedPackages.length > 0) {
                 const uniquePackages = [...new Set(updatedPackages)];
                 exec(`npm update ${uniquePackages.join(' ')}`, (err) => {
                     handleError(err);
-                    console.log("Updated packages and lock files updated");
+                    console.log("Updated lock files");
                     resolve();
                 });
             } else {
