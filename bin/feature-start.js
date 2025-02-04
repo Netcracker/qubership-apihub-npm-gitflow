@@ -94,7 +94,7 @@ function updateVersions(isLernaProject, featureVersion) {
 function commitPushAndSetUpstream(featureName, featureVersion) {
     return new Promise((resolve) => {
         git
-            .commit(["-a", "-m", `chore: update version to ${featureVersion}`], (err) => {
+            .commit(["-a", "--no-edit", "-m", `chore: update version to ${featureVersion}`], (err) => {
                 handleError(err);
                 console.log("Commit updated version");
             })
