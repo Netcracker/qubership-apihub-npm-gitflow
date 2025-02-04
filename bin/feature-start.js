@@ -40,7 +40,7 @@ switchToDevelopAndPull()
     .then(() => createFeatureBranch(featureName))
     .then(() => getFeatureVersion(isLernaProject))
     .then(version => featureVersion = version)
-    .then(() => updateVersions(isLernaProject, featureVersion ))
+    .then(() => isLernaProject ? changeLernaProjectVersion(featureVersion) : changePackageJsonVersion(featureVersion))    
     .then(() => commitPushAndSetUpstream(featureName, featureVersion))
     .then(() => printSummary(featureName, featureVersion));
 
@@ -77,17 +77,23 @@ function getFeatureVersion(isLernaProject) {
     });
 }
 
-function updateVersions(isLernaProject, featureVersion) {
+function changePackageJsonVersion(version) {
     return new Promise((resolve) => {
-        if (isLernaProject) {
-            console.log("Update versions for lerna project");
-            executeCommand(`lerna version ${featureVersion} --message \"chore: update version to ${featureVersion}\" --no-push --no-private --no-git-tag-version --yes`)
-                .then(() => resolve());
-        } else {
-            console.log("Update versions for project");
-            executeCommand("npm version --no-git-tag-version -m \"chore: update version to %s\" " + featureVersion)
-                .then(() => resolve());
-        }
+        exec(`npm version ${version} --no-git-tag-version`, err => {
+            handleError(err);
+            console.log("Version of package.json changed to " + version);
+            resolve();
+        });
+    });
+}
+
+function changeLernaProjectVersion(version) {
+    return new Promise((resolve) => {
+        exec(`lerna version ${version} --no-push --no-private --no-git-tag-version --yes`, err => {
+            handleError(err);
+            console.log("Version of lerna.json changed to " + version);
+            resolve();
+        });
     });
 }
 
