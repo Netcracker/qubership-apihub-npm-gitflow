@@ -209,9 +209,10 @@ function validateDependencies() {
         }
 
         if (invalidDeps.length > 0) {
-            const errorMessage = `Cannot proceed with release. Found invalid dependency versions:\n${invalidDeps.join('\n')}`;
-            console.error(errorMessage);
+            const errorMessage = 'Cannot proceed with release. The following dependencies must be updated to release versions:\n' + 
+                               invalidDeps.map(dep => `  - ${dep}`).join('\n');
             reject(new Error(errorMessage));
+            return;
         }
         
         console.log('Dependencies validation passed');
