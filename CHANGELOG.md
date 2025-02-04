@@ -1,3 +1,13 @@
+## 2.2.0
+
+### Added
+- replace 'dev' dependencies versions to 'next' during release start
+- replace 'feature-..' dependencies versions to 'dev' during feature finish
+- dependency validation during feature finish
+
+### Fixed
+- commit changed versions after feature start
+
 ## 2.1.0
 - use release branch without version in name
 - merge updated version to develop from main during release
