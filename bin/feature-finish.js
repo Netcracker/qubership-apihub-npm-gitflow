@@ -21,6 +21,7 @@ const exec = require('child_process').exec;
 
 const path = require('path');
 const isLernaProject = fs.existsSync("./lerna.json");
+const { updateDistTagsDependenciesAndLockFiles } = require('../lib/update-dist-tags');
 
 let featureBranch;
 
@@ -34,6 +35,7 @@ getCurrentBranchName()
     .then(() => mergeToDevelop(this.featureBranch))
     .then(() => getDevelopVersion())
     .then((version) => isLernaProject ? changeLernaVersion(version) : changePackageJsonVersion(version))
+    .then(() => updateDistTagsDependenciesAndLockFiles(isLernaProject, version => version.startsWith('feature'), 'dev'))
     .then(() => commitAndPush(this.featureBranch))
     .then(() => deleteFeatureBranch(this.featureBranch));
 

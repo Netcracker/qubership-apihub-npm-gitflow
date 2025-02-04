@@ -25,6 +25,8 @@ const isLernaProject = fs.existsSync("./lerna.json");
 const packageJsonPath = path.resolve(process.cwd(), "package.json");
 const packageJsonFile = require(packageJsonPath);
 
+const { updateDistTagsDependenciesAndLockFiles } = require('../lib/update-dist-tags');
+
 let releaseVersion;
 
 //TODO: add check that release is already in progress
@@ -34,7 +36,7 @@ switchToDevelopAndPull()
     .then(releaseVersion => this.releaseVersion = releaseVersion + '-next.0')
     .then(() => createReleaseBranch(this.releaseVersion))
     .then(() => isLernaProject ? changeLernaProjectVersion(this.releaseVersion) : changePackageJsonVersion(this.releaseVersion))
-    .then(() => updateDistTagsDependenciesAndLockFiles(version => version === 'dev', 'next'))
+    .then(() => updateDistTagsDependenciesAndLockFiles(isLernaProject, version => version === 'dev', 'next'))
     .then(() => commitAndPushRelease(this.releaseVersion));
 
 function switchToDevelopAndPull() {
@@ -144,97 +146,4 @@ function handleError(err) {
         console.log(err);
         process.exit(1);
     }
-}
-
-function updateDistTagDependencies(packageJson, versionPredicate, newVersion) {
-    const dependencyTypes = ['dependencies', 'devDependencies', 'peerDependencies'];
-    let updatedPackages = [];
-    
-    dependencyTypes.forEach(type => {
-        if (packageJson[type]) {
-            Object.entries(packageJson[type]).forEach(([pkg, version]) => {
-                if (versionPredicate(version)) {
-                    packageJson[type][pkg] = newVersion;
-                    console.log(`Updated ${pkg} from ${version} to ${newVersion} in ${type}`);
-                    updatedPackages.push(pkg);
-                }
-            });
-        }
-    });
-    
-    return updatedPackages;
-}
-
-function updatePackageJsonDistTagDependencies(versionPredicate, newVersion) {
-    return new Promise((resolve) => {
-        const updatedPackages = updateDistTagDependencies(
-            packageJsonFile,
-            versionPredicate,
-            newVersion
-        );
-        if (updatedPackages.length > 0) {
-            fs.writeFile(packageJsonPath, JSON.stringify(packageJsonFile, null, 2), err => {
-                handleError(err);
-                console.log(`Updated dependencies matching predicate to ${newVersion}`);
-                resolve(updatedPackages);
-            });
-        } else {
-            resolve([]);
-        }
-    });
-}
-
-function updateLernaPackagesDistTagDependencies(versionPredicate, newVersion) {
-    return new Promise((resolve) => {
-        exec('lerna list --json', (err, stdout) => {
-            if (err) {
-                handleError(err);
-                return;
-            }
-            
-            const packages = JSON.parse(stdout);
-            let allUpdatedPackages = [];
-            
-            packages.forEach(pkg => {
-                const packagePath = path.join(pkg.location, 'package.json');
-                const packageJson = require(packagePath);
-                
-                const updatedPackages = updateDistTagDependencies(
-                    packageJson,
-                    versionPredicate,
-                    newVersion
-                );
-                if (updatedPackages.length > 0) {
-                    fs.writeFileSync(packagePath, JSON.stringify(packageJson, null, 2));
-                    allUpdatedPackages = [...allUpdatedPackages, ...updatedPackages];
-                }
-            });
-            
-            if (allUpdatedPackages.length > 0) {
-                console.log(`Updated dependencies matching predicate to ${newVersion} in all packages`);
-            }
-            resolve(allUpdatedPackages);
-        });
-    });
-}
-
-function updateDistTagsDependenciesAndLockFiles(versionPredicate, newVersion) {
-    return new Promise((resolve) => {
-        const updatePromise = isLernaProject 
-            ? updateLernaPackagesDistTagDependencies(versionPredicate, newVersion) 
-            : updatePackageJsonDistTagDependencies(versionPredicate, newVersion);
-            
-        updatePromise.then((updatedPackages) => {
-            if (updatedPackages.length > 0) {
-                const uniquePackages = [...new Set(updatedPackages)];
-                exec(`npm update ${uniquePackages.join(' ')}`, (err) => {
-                    handleError(err);
-                    console.log("Updated lock files");
-                    resolve();
-                });
-            } else {
-                resolve();
-            }
-        });
-    });
 }

@@ -10,6 +10,7 @@
   "main": "bin/index.js",
   "files": [
     "bin",
+    "lib",
     "LICENSE"
   ],
   "bin": {
