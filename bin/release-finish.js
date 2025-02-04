@@ -183,7 +183,7 @@ function handleError(err) {
 }
 
 function validateDependencies() {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         const packageJson = require(packageJsonPath);
         const invalidTags = ['dev', 'next'];
         
@@ -211,8 +211,7 @@ function validateDependencies() {
         if (invalidDeps.length > 0) {
             const errorMessage = 'Cannot proceed with release. The following dependencies must be updated to release versions:\n' + 
                                invalidDeps.map(dep => `  - ${dep}`).join('\n');
-            reject(new Error(errorMessage));
-            return;
+            handleError(new Error(errorMessage));
         }
         
         console.log('Dependencies validation passed');
