@@ -100,9 +100,11 @@ function commitPushAndSetUpstream(featureName, featureVersion) {
             })
             .push(["origin", "feature/" + featureName], (err) => {
                 handleError(err);
+                console.log("Push feature branch to origin");
             })
             .branch(["--set-upstream-to", "origin/feature/" + featureName, "feature/" + featureName], (err) => {
                 handleError(err);
+                console.log("Set upstream to origin/feature/" + featureName);   
                 resolve();
             });
     });
