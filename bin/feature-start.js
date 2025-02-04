@@ -41,7 +41,7 @@ switchToDevelopAndPull()
     .then(() => getFeatureVersion(isLernaProject))
     .then(version => featureVersion = version)
     .then(() => isLernaProject ? changeLernaProjectVersion(featureVersion) : changePackageJsonVersion(featureVersion))    
-    .then(() => commitPushAndSetUpstream(featureName, featureVersion))
+    .then(() => commitAndPush(featureName, featureVersion))
     .then(() => printSummary(featureName, featureVersion));
 
 function switchToDevelopAndPull() {
@@ -97,32 +97,17 @@ function changeLernaProjectVersion(version) {
     });
 }
 
-function commitPushAndSetUpstream(featureName, featureVersion) {
+function commitAndPush(featureName, featureVersion) {
     return new Promise((resolve) => {
-        git
-            .commit(["-a", "--no-edit", "-m", `chore: update version to ${featureVersion}`], (err) => {
-                handleError(err);
-                console.log("Commit updated version");
-            })
-            .push(["origin", "feature/" + featureName], (err) => {
-                handleError(err);
-                console.log("Push feature branch to origin");
-            })
-            .branch(["--set-upstream-to", "origin/feature/" + featureName, "feature/" + featureName], (err) => {
-                handleError(err);
-                console.log("Set upstream to origin/feature/" + featureName);   
-                resolve();
-            });
-    });
-}
-
-function executeCommand(command) {
-    return new Promise((resolve) => {
-        exec(command, err => {
+        git.raw(["commit", "-a", "--no-edit", `-m "chore: update version to ${featureVersion}"`], (err) => {
             handleError(err);
+            console.log("Commit")
+        }).raw(["push", "--set-upstream", "origin", "feature/" + featureName], (err) => {
+            handleError(err);
+            console.log("Push");
             resolve();
         });
-    });
+    });    
 }
 
 function printSummary(featureName, featureVersion) {
