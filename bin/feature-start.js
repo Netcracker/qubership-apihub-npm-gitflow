@@ -34,58 +34,83 @@ if (!featureName || typeof featureName === "boolean") {
     process.exit(0);
 }
 
-let developVersion;
 let featureVersion;
 
-git
-//Update develop before creating new feature branch
-    .pull((err) => handleError(err))
-    //Creating feature branch
-    .checkout("develop", (err) => handleError(err))
-    .checkoutLocalBranch("feature/" + featureName, (err) => handleError(err))
-    //Get develop version
-    .show([isLernaProject ? "develop:lerna.json" : "develop:package.json"], (err, data) => {
-        handleError(err);
-        developVersion = JSON.parse(data)["version"];
-        featureVersion = developVersion.match(/\d+\.\d+\.\d+/)[0] + "-feature-" + featureName + ".0";
-    })
-    //Change version at feature branch (autocommit)
-    .exec(() => {
-        let execPromise;
-        if (isLernaProject) {
-            console.log("Update versions for lerna project");
-            execPromise = executeCommand(`lerna version ${featureVersion} --message \"chore: update version to ${featureVersion}\" --no-push --no-private --no-git-tag-version --yes`)
-                .then(() => {
-                    // Add git commit after lerna updates the versions
-                    console.log("Commit updated version");
-                    return executeCommand('git commit -a -m "chore: update version to ' + featureVersion + '"');
-                });
-        } else {
-            console.log("Update versions for project");
-            execPromise = executeCommand("npm version --no-git-tag-version -m \"chore: update version to %s\" " + featureVersion);
-        }
-        execPromise.then(() => {
-            git  //Push
-                .push(["origin", "feature/" + featureName], (err) => {
-                    handleError(err);
-                }) //Set upstream branch
-                .branch(["--set-upstream-to", "origin/feature/" + featureName, "feature/" + featureName], (err) => {
-                    handleError(err);
-                    printSummary();
-                });
-        });
-    });
+switchToDevelopAndPull()
+    .then(() => createFeatureBranch(featureName))
+    .then(() => getFeatureVersion(isLernaProject))
+    .then(version => featureVersion = version)
+    .then(() => isLernaProject ? changeLernaProjectVersion(featureVersion) : changePackageJsonVersion(featureVersion))    
+    .then(() => commitAndPush(featureName, featureVersion))
+    .then(() => printSummary(featureName, featureVersion));
 
-function executeCommand(command) {
-    return new Promise((resolve) => {
-        exec(command, err => {
+function switchToDevelopAndPull() {
+    return new Promise(resolve => {
+        git.pull((err) => handleError(err))
+            .checkout("develop", (err) => {
+                handleError(err);
+                console.log("Switch to develop and update!");
+                resolve();
+            });
+    });
+}
+
+function createFeatureBranch(featureName) {
+    return new Promise(resolve => {
+        git.checkoutLocalBranch("feature/" + featureName, (err) => {
             handleError(err);
+            console.log("Created feature branch: feature/" + featureName);
             resolve();
         });
     });
 }
 
-function printSummary() {
+function getFeatureVersion(isLernaProject) {
+    return new Promise(resolve => {
+        git.show([isLernaProject ? "develop:lerna.json" : "develop:package.json"], (err, data) => {
+            handleError(err);
+            const developVersion = JSON.parse(data)["version"];
+            const baseVersion = developVersion.match(/\d+\.\d+\.\d+/)[0];
+            const featureVersion = baseVersion + "-feature-" + featureName + ".0";
+            resolve(featureVersion);
+        });
+    });
+}
+
+function changePackageJsonVersion(version) {
+    return new Promise((resolve) => {
+        exec(`npm version ${version} --no-git-tag-version`, err => {
+            handleError(err);
+            console.log("Version of package.json changed to " + version);
+            resolve();
+        });
+    });
+}
+
+function changeLernaProjectVersion(version) {
+    return new Promise((resolve) => {
+        exec(`lerna version ${version} --no-push --no-private --no-git-tag-version --yes`, err => {
+            handleError(err);
+            console.log("Version of lerna.json changed to " + version);
+            resolve();
+        });
+    });
+}
+
+function commitAndPush(featureName, featureVersion) {
+    return new Promise((resolve) => {
+        git.raw(["commit", "-a", "--no-edit", `-m "chore: update version to ${featureVersion}"`], (err) => {
+            handleError(err);
+            console.log("Commit")
+        }).raw(["push", "--set-upstream", "origin", "feature/" + featureName], (err) => {
+            handleError(err);
+            console.log("Push");
+            resolve();
+        });
+    });    
+}
+
+function printSummary(featureName, featureVersion) {
     console.log("Summary of actions: ");
     console.log("A new branch feature/" + featureName + " was created, based on 'develop'");
     console.log("You are now on branch feature/" + featureName);

@@ -25,6 +25,8 @@ const isLernaProject = fs.existsSync("./lerna.json");
 const packageJsonPath = path.resolve(process.cwd(), "package.json");
 const packageJsonFile = require(packageJsonPath);
 
+const { updateDistTagsDependenciesAndLockFiles } = require('../lib/update-dist-tags');
+
 let releaseVersion;
 
 //TODO: add check that release is already in progress
@@ -34,6 +36,7 @@ switchToDevelopAndPull()
     .then(releaseVersion => this.releaseVersion = releaseVersion + '-next.0')
     .then(() => createReleaseBranch(this.releaseVersion))
     .then(() => isLernaProject ? changeLernaProjectVersion(this.releaseVersion) : changePackageJsonVersion(this.releaseVersion))
+    .then(() => updateDistTagsDependenciesAndLockFiles(isLernaProject, version => version === 'dev', 'next'))
     .then(() => commitAndPushRelease(this.releaseVersion));
 
 function switchToDevelopAndPull() {

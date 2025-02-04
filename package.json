@@ -10,6 +10,7 @@
   "main": "bin/index.js",
   "files": [
     "bin",
+    "lib",
     "LICENSE"
   ],
   "bin": {
@@ -19,10 +20,10 @@
     "release-start": "bin/release-start.js"
   },
   "dependencies": {
-    "simple-git": "^3.18.0",
     "command-line-args": "^5.0.2",
     "edit-json-file": "^1.0.8",
     "semver": "^5.5.1",
+    "simple-git": "^3.18.0",
     "time-stamp": "^2.0.0"
   },
   "devDependencies": {
