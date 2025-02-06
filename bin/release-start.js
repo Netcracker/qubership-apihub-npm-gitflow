@@ -109,21 +109,31 @@ function commitAndPushRelease(releaseVersion) {
 function checkPackageJsonVersions() {
     return new Promise((resolve) => {
         const packageLockJsonPath = path.resolve(process.cwd(), "package-lock.json");
+        // First check package-lock.json
         fs.access(packageLockJsonPath, fs.constants.F_OK, (packageLockError) => {
             if (packageLockError) {
-                const yarnLockJsonPath = path.resolve(process.cwd(), "yarn.lock");
-                fs.access(yarnLockJsonPath, fs.constants.F_OK, (yarnLockError) => {
-                    if (yarnLockError) {
-                        if (hasNotStableDependencies()) handleError("Not stable dependencies found. Please fix and try release again.");
-                        resolve();
+                // Then check npm-shrinkwrap.json
+                const shrinkwrapPath = path.resolve(process.cwd(), "npm-shrinkwrap.json");
+                fs.access(shrinkwrapPath, fs.constants.F_OK, (shrinkwrapError) => {
+                    if (shrinkwrapError) {
+                        // Finally check yarn.lock
+                        const yarnLockJsonPath = path.resolve(process.cwd(), "yarn.lock");
+                        fs.access(yarnLockJsonPath, fs.constants.F_OK, (yarnLockError) => {
+                            if (yarnLockError) {
+                                if (hasNotStableDependencies()) handleError("Not stable dependencies found. Please fix and try release again.");
+                                resolve();
+                            } else {
+                                resolve();
+                            }
+                        });
                     } else {
                         resolve();
                     }
-                })
+                });
             } else {
                 resolve();
             }
-        })
+        });
     });
 }
 

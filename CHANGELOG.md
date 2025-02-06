@@ -1,3 +1,8 @@
+## 2.2.1
+
+### Fixed
+- check for npm-shrinkwrap file in addition to package lock when validating dependencies during release start
+
 ## 2.2.0
 
 ### Added
