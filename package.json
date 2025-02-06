@@ -2,7 +2,7 @@
   "name": "@netcracker/qubership-apihub-npm-gitflow",
   "description": "Simple git flow API for node.js",
   "license": "Apache-2.0",
-  "version": "2.2.1-next.2",
+  "version": "2.2.1",
   "keywords": [
     "git",
     "git flow"
