@@ -1,3 +1,8 @@
+## 2.2.2
+
+### Fixed
+- adapt GitHub workflow to publish from git tag
+
 ## 2.2.1
 
 ### Fixed
