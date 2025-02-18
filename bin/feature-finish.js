@@ -52,11 +52,12 @@ function getCurrentBranchName() {
 
 function updateFeatureBranchToDevelop() {
     return new Promise(resolve => {
-        git.raw(["pull", "--progress", "-v", "--no-rebase", "origin", "develop"], (err) => {
-            handleError(err);
-            resolve();
-        })
-    })
+        git.pull('origin', 'develop', ['--no-rebase', '--progress', '-v'])
+            .then(() => {
+                resolve();
+            })
+            .catch(handleError);
+    });
 }
 
 function switchToDevelopAndPull() {
@@ -111,27 +112,28 @@ function changeLernaVersion(version) {
 
 function commitAndPush(branch) {
     return new Promise((resolve) => {
-        git.raw(["commit", "-a", "--no-edit", "-m chore: merge from " + branch + " to develop"], (err) => {
-            handleError(err);
-            console.log("Commit!")
-        }).push("origin", "develop", (err) => {
-            handleError(err);
-            console.log("Push!");
-            resolve();
-        });
+        git.commit('chore: merge from ' + branch + ' to develop', ['--all', '--no-edit'])
+            .then(() => {
+                console.log("Commit!");
+                return git.push('origin', 'develop');
+            })
+            .then(() => {
+                console.log("Push!");
+                resolve();
+            })
+            .catch(handleError);
     });
 }
 
 function deleteFeatureBranch(branch) {
     return new Promise((resolve) => {
-        git.raw(["push", "origin", "--delete", branch], (err) => {
-            handleError(err);
-        })
-            .branch(["-D", branch], (err) => {
-                handleError(err);
+        git.push(['origin', '--delete', branch])
+            .then(() => git.deleteLocalBranch(branch))
+            .then(() => {
                 console.log("Branch " + branch + " was deleted!");
                 resolve();
-            });
+            })
+            .catch(handleError);
     });
 }
 

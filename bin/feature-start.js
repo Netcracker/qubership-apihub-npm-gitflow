@@ -99,15 +99,17 @@ function changeLernaProjectVersion(version) {
 
 function commitAndPush(featureName, featureVersion) {
     return new Promise((resolve) => {
-        git.raw(["commit", "-a", "--no-edit", `-m "chore: update version to ${featureVersion}"`], (err) => {
-            handleError(err);
-            console.log("Commit")
-        }).raw(["push", "--set-upstream", "origin", "feature/" + featureName], (err) => {
-            handleError(err);
-            console.log("Push");
-            resolve();
-        });
-    });    
+        git.commit('chore: update version to ' + featureVersion, ['--all', '--no-edit'])
+            .then(() => {
+                console.log("Commit!");
+                return git.push('origin', 'feature/' + featureName, ['--set-upstream']);
+            })
+            .then(() => {
+                console.log("Push!");
+                resolve();
+            })
+            .catch(handleError);
+    });
 }
 
 function printSummary(featureName, featureVersion) {

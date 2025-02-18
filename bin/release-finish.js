@@ -54,11 +54,12 @@ pullAll()
 
 function pullAll() {
     return new Promise(resolve => {
-        git.raw(["pull", "--all"], (err) => {
-            handleError(err);
-            console.log("Pull all branches");
-            resolve();
-        })
+        git.pull(['--all'])
+            .then(() => {
+                console.log("Pull all branches");
+                resolve();
+            })
+            .catch(handleError);
     });
 }
 
@@ -85,12 +86,13 @@ function switchToBranch(branch) {
 
 function mergeFromBranch(branch) {
     return new Promise(resolve => {
-        git.raw(["merge", "--no-ff", branch], (err) => {
-            handleError(err);
-            console.log("Merge from branch! " + branch);
-            resolve();
-        })
-    })
+        git.merge(['--no-ff', branch])
+            .then(() => {
+                console.log("Merge from branch! " + branch);
+                resolve();
+            })
+            .catch(handleError);
+    });
 }
 
 function changePackageJsonVersion(version) {
@@ -116,34 +118,36 @@ function changeLernaProjectVersion(version, branchName) {
 
 function createAndPushTag(version) {
     return new Promise(resolve => {
-        git.raw(["tag", "-a", version, "-m chore: release :" + version], (err) => {
-            handleError(err);
-            console.log("Git tag. Version: " + version);
-        }).raw(["push", "origin", version], (err) => {
-            handleError(err);
-            console.log("Git push tags");
-            resolve();
-        })
-    })
+        git.addAnnotatedTag(version, 'chore: release :' + version)
+            .then(() => git.pushTags())
+            .then(() => {
+                console.log("Git tag. Version: " + version);
+                console.log("Git push tags");
+                resolve();
+            })
+            .catch(handleError);
+    });
 }
 
 function commit(message) {
     return new Promise((resolve) => {
-        git.raw(["commit", "-a", "--no-edit", "-m chore: release: " + message], (err) => {
-            handleError(err);
-            console.log("Commit!");
-            resolve();
-        })
+        git.commit('chore: release: ' + message, ['--all', '--no-edit'])
+            .then(() => {
+                console.log("Commit!");
+                resolve();
+            })
+            .catch(handleError);
     });
 }
 
 function push() {
     return new Promise((resolve) => {
-        git.raw(["push"], (err) => {
-            handleError(err);
-            console.log("Push!");
-            resolve();
-        })
+        git.push()
+            .then(() => {
+                console.log("Push!");
+                resolve();
+            })
+            .catch(handleError);
     });
 }
 
@@ -166,12 +170,13 @@ function getIncrementedPackageJsonVersion() {
 
 function deleteBranch(branch) {
     return new Promise((resolve) => {
-        git.raw(["push", "origin", "--delete", branch], (err) => handleError(err))
-            .branch(["-D", branch], (err) => {
-                handleError(err);
+        git.push(['origin', '--delete', branch])
+            .then(() => git.deleteLocalBranch(branch))
+            .then(() => {
                 console.log("Branch " + branch + " was deleted!");
                 resolve();
-            });
+            })
+            .catch(handleError);
     });
 }
 

@@ -42,11 +42,12 @@ switchToDevelopAndPull()
 function switchToDevelopAndPull() {
     return new Promise(resolve => {
         git.checkout('develop')
-            .pull((err) => {
-                handleError(err);
+            .pull()
+            .then(() => {
                 console.log("Switch to develop and update!");
                 resolve();
             })
+            .catch(handleError);
     })
 }
 
@@ -64,11 +65,12 @@ function getLernaVersion() {
 
 function createReleaseBranch(releaseVersion) {
     return new Promise(resolve => {
-        git.raw(["checkout", "-b", "release", "develop"], err => {
-            handleError(err);
-            console.log("Create release branch with version: " + releaseVersion);
-            resolve();
-        })
+        git.checkoutBranch('release', 'develop')
+            .then(() => {
+                console.log("Create release branch with version: " + releaseVersion);
+                resolve();
+            })
+            .catch(handleError);
     })
 }
 
@@ -95,14 +97,16 @@ function changeLernaProjectVersion(version) {
 
 function commitAndPushRelease(releaseVersion) {
     return new Promise((resolve) => {
-        git.raw(["commit", "-a", "--no-edit", "-m chore: release start, version: " + releaseVersion], (err) => {
-            handleError(err);
-            console.log("Commit!")
-        }).raw(["push", "--set-upstream", "origin", "release"], (err) => {
-            handleError(err);
-            console.log("Push!");
-            resolve();
-        });
+        git.commit('chore: release start, version: ' + releaseVersion, ['--all', '--no-edit'])
+            .then(() => {
+                console.log("Commit!")
+                return git.push('origin', 'release', ['--set-upstream']);
+            })
+            .then(() => {
+                console.log("Push!");
+                resolve();
+            })
+            .catch(handleError);
     });
 }
 
