@@ -20,6 +20,9 @@ const exec = require('child_process').exec;
 const git = require('simple-git')();
 const fs = require('fs');
 
+const debug = require('debug');
+debug.enable('simple-git');
+
 const optionDefinitions = [
     {name: 'featureName', alias: 'f', type: String, defaultOption: true}
 ];
