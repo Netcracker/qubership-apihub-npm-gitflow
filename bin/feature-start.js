@@ -19,13 +19,15 @@ const commandLineArgs = require("command-line-args");
 const exec = require('child_process').exec;
 const fs = require('fs');
 
-const git = require('simple-git')({
-    debug: (name, args) => {
-        if (name === 'spawn') {
-            console.log(`git ${args.join(' ')}`);
-        }
-    }
-});
+const simpleGit = require('simple-git');
+
+function createDebugGit() {
+    return simpleGit().customBinary((command) => {
+        console.log(`Executing git command: ${command}`);
+        return 'git';
+    });
+}
+const git = createDebugGit();
 
 const optionDefinitions = [
     {name: 'featureName', alias: 'f', type: String, defaultOption: true}
