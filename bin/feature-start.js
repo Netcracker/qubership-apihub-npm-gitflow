@@ -17,15 +17,8 @@
 
 const commandLineArgs = require("command-line-args");
 const exec = require('child_process').exec;
+const git = require('simple-git')();
 const fs = require('fs');
-const git = require('simple-git')({
-    debug: (name, args) => {
-        console.log(`!!! ${name}`);
-        if (name?.toUpperCase() === 'SPAWN') {
-            console.log(`git ${args.join(' ')}`);
-        }
-    }
-});
 
 const optionDefinitions = [
     {name: 'featureName', alias: 'f', type: String, defaultOption: true}
