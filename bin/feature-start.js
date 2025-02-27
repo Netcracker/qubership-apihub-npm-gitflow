@@ -19,6 +19,7 @@ const commandLineArgs = require("command-line-args");
 const exec = require('child_process').exec;
 const git = require('simple-git')();
 const fs = require('fs');
+const { checkUncommittedChanges } = require('../lib/git-utils');
 
 const optionDefinitions = [
     {name: 'featureName', alias: 'f', type: String, defaultOption: true}
@@ -36,7 +37,8 @@ if (!featureName || typeof featureName === "boolean") {
 
 let featureVersion;
 
-switchToDevelopAndPull()
+checkUncommittedChanges(git)
+    .then(() => switchToDevelopAndPull())
     .then(() => createFeatureBranch(featureName))
     .then(() => getFeatureVersion(isLernaProject))
     .then(version => featureVersion = version)

@@ -18,16 +18,17 @@
 const git = require('simple-git')();
 const fs = require('fs');
 const exec = require('child_process').exec;
-
 const path = require('path');
 const packageJsonPath = path.resolve(process.cwd(), "package.json");
 const packageJsonFile = require(packageJsonPath);
 const isLernaProject = fs.existsSync("./lerna.json");
+const { checkUncommittedChanges } = require('../lib/git-utils');
 
 let releaseBranch;
 let version;
 
-pullAll()
+checkUncommittedChanges(git)
+    .then(() => pullAll())
     .then(() => switchToBranch('release'))
     .then(() => validateDependencies())
     .then(() => {

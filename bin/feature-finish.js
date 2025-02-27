@@ -18,14 +18,15 @@
 const git = require("simple-git")();
 const fs = require("fs");
 const exec = require('child_process').exec;
-
 const path = require('path');
 const isLernaProject = fs.existsSync("./lerna.json");
 const { updateDistTagsDependenciesAndLockFiles } = require('../lib/update-dist-tags');
+const { checkUncommittedChanges } = require('../lib/git-utils');
 
 let featureBranch;
 
-getCurrentBranchName()
+checkUncommittedChanges(git)
+    .then(() => getCurrentBranchName())
     .then(branch => {
         if (branch.search("feature") === -1) handleError("You are trying to finish not feature branch: " + branch);
         this.featureBranch = branch;

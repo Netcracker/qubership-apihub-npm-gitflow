@@ -18,19 +18,18 @@
 const git = require('simple-git')();
 const fs = require('fs');
 const exec = require('child_process').exec;
-
 const path = require('path');
 const isLernaProject = fs.existsSync("./lerna.json");
-
 const packageJsonPath = path.resolve(process.cwd(), "package.json");
 const packageJsonFile = require(packageJsonPath);
-
 const { updateDistTagsDependenciesAndLockFiles } = require('../lib/update-dist-tags');
+const { checkUncommittedChanges } = require('../lib/git-utils');
 
 let releaseVersion;
 
 //TODO: add check that release is already in progress
-switchToDevelopAndPull()
+checkUncommittedChanges(git)
+    .then(() => switchToDevelopAndPull())
     .then(() => checkPackageJsonVersions())
     .then(() => isLernaProject ? getLernaVersion() : getPackageJsonVersion())
     .then(releaseVersion => this.releaseVersion = releaseVersion + '-next.0')
