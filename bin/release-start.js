@@ -17,98 +17,63 @@
 
 const git = require('simple-git')();
 const fs = require('fs');
-const exec = require('child_process').exec;
 const path = require('path');
 const isLernaProject = fs.existsSync("./lerna.json");
 const packageJsonPath = path.resolve(process.cwd(), "package.json");
 const packageJsonFile = require(packageJsonPath);
-const { updateDistTagsDependenciesAndLockFiles } = require('../lib/update-dist-tags');
-const { checkUncommittedChanges } = require('../lib/git-utils');
+const { 
+    checkUncommittedChanges, 
+    switchToDevelopAndPull, 
+    createReleaseBranch, 
+    commitAndPush,
+    handleError 
+} = require('../lib/git-utils');
+const { 
+    changePackageJsonVersion, 
+    changeLernaProjectVersion, 
+    updateDistTagsDependenciesAndLockFiles 
+} = require('../lib/npm-utils');
 
 let releaseVersion;
 
 //TODO: add check that release is already in progress
 checkUncommittedChanges(git)
-    .then(() => switchToDevelopAndPull())
+    .then(() => switchToDevelopAndPull(git))
     .then(() => checkPackageJsonVersions())
     .then(() => isLernaProject ? getLernaVersion() : getPackageJsonVersion())
     .then(releaseVersion => this.releaseVersion = releaseVersion + '-next.0')
-    .then(() => createReleaseBranch(this.releaseVersion))
-    .then(() => isLernaProject ? changeLernaProjectVersion(this.releaseVersion) : changePackageJsonVersion(this.releaseVersion))
+    .then(() => createReleaseBranch(git, 'release', this.releaseVersion))
+    .then(() => isLernaProject ? changeLernaProjectVersion(this.releaseVersion, 'release') : changePackageJsonVersion(this.releaseVersion))
     .then(() => updateDistTagsDependenciesAndLockFiles(isLernaProject, version => version === 'dev', 'next'))
-    .then(() => commitAndPushRelease(this.releaseVersion));
+    .then(() => commitAndPush(git, 'release', 'chore: release start, version: ' + this.releaseVersion, true));
 
-function switchToDevelopAndPull() {
-    return new Promise(resolve => {
-        git.checkout('develop')
-            .pull()
-            .then(() => {
-                console.log("Switch to develop and update!");
-                resolve();
-            })
-            .catch(handleError);
-    })
-}
-
+/**
+ * Gets the version from package.json without any pre-release identifiers
+ * 
+ * @returns {Promise<string>} A promise that resolves with the version
+ */
 function getPackageJsonVersion() {
     return new Promise((resolve) => {
         resolve(packageJsonFile.version.match(/\d+\.\d+\.\d+/)[0]);
     });
 }
 
+/**
+ * Gets the version from lerna.json without any pre-release identifiers
+ * 
+ * @returns {Promise<string>} A promise that resolves with the version
+ */
 function getLernaVersion() {
     return new Promise((resolve) => {
         resolve(require(path.resolve(process.cwd(), "lerna.json")).version.match(/\d+\.\d+\.\d+/)[0]);
     });
 }
 
-function createReleaseBranch(releaseVersion) {
-    return new Promise(resolve => {
-        git.checkoutBranch('release', 'develop')
-            .then(() => {
-                console.log("Create release branch with version: " + releaseVersion);
-                resolve();
-            })
-            .catch(handleError);
-    })
-}
-
-function changePackageJsonVersion(version) {
-    return new Promise((resolve) => {
-        packageJsonFile.version = version;
-        //TODO: use npm to set version
-        fs.writeFile(packageJsonPath, JSON.stringify(packageJsonFile, null, 2), err => {
-            handleError(err);
-            console.log("Version of package.json changed to " + version);
-            resolve();
-        });
-    });
-}
-
-function changeLernaProjectVersion(version) {
-    return new Promise((resolve) => {
-        exec(`lerna version ${version} --no-push --no-private --no-git-tag-version --allow-branch release --yes`, err => {
-            handleError(err);
-            resolve();
-        });
-    });
-}
-
-function commitAndPushRelease(releaseVersion) {
-    return new Promise((resolve) => {
-        git.commit('chore: release start, version: ' + releaseVersion, ['--all', '--no-edit'])
-            .then(() => {
-                console.log("Commit!")
-                return git.push('origin', 'release', ['--set-upstream']);
-            })
-            .then(() => {
-                console.log("Push!");
-                resolve();
-            })
-            .catch(handleError);
-    });
-}
-
+/**
+ * Checks package.json versions and dependencies
+ * 
+ * @returns {Promise<void>} A promise that resolves when the check is complete
+ */
 function checkPackageJsonVersions() {
     return new Promise((resolve) => {
         const packageLockJsonPath = path.resolve(process.cwd(), "package-lock.json");
@@ -140,6 +105,11 @@ function checkPackageJsonVersions() {
     });
 }
 
+/**
+ * Checks if there are any non-stable dependencies in package.json
+ * 
+ * @returns {boolean} True if there are non-stable dependencies
+ */
 function hasNotStableDependencies() {
     let dependencies = Object.assign({}, packageJsonFile.dependencies || {}, packageJsonFile.devDependencies || {}, packageJsonFile.peerDependencies || {});
     let notStableDependencies;
@@ -150,13 +120,5 @@ function hasNotStableDependencies() {
             console.error("Not stable: " + property + ":" + version);
         }
     }
-
-    return notStableDependencies
-}
-
-function handleError(err) {
-    if (err) {
-        console.log(err);
-        process.exit(1);
-    }
+    return notStableDependencies;
 }

@@ -16,10 +16,19 @@
  */
 
 const commandLineArgs = require("command-line-args");
-const exec = require('child_process').exec;
 const git = require('simple-git')();
 const fs = require('fs');
-const { checkUncommittedChanges } = require('../lib/git-utils');
+const {
+    checkUncommittedChanges,
+    createFeatureBranch,
+    switchToDevelopAndPull,
+    getVersionFromBranch,
+    commitAndPush
+} = require('../lib/git-utils');
+const {
+    changePackageJsonVersion,
+    changeLernaProjectVersion
+} = require('../lib/npm-utils');
 
 const optionDefinitions = [
     {name: 'featureName', alias: 'f', type: String, defaultOption: true}
@@ -38,92 +47,21 @@ if (!featureName || typeof featureName === "boolean") {
 let featureVersion;
 
 checkUncommittedChanges(git)
-    .then(() => switchToDevelopAndPull())
-    .then(() => createFeatureBranch(featureName))
-    .then(() => getFeatureVersion(isLernaProject))
-    .then(version => featureVersion = version)
-    .then(() => isLernaProject ? changeLernaProjectVersion(featureVersion) : changePackageJsonVersion(featureVersion))    
-    .then(() => commitAndPush(featureName, featureVersion))
+    .then(() => switchToDevelopAndPull(git))
+    .then(() => createFeatureBranch(git, featureName))
+    .then(() => getVersionFromBranch(git, 'develop', isLernaProject))
+    .then(version => {
+        const baseVersion = version.match(/\d+\.\d+\.\d+/)[0];
+        featureVersion = baseVersion + "-feature-" + featureName + ".0";
+        return featureVersion;
+    })
+    .then(version => isLernaProject ? changeLernaProjectVersion(version) : changePackageJsonVersion(version))    
+    .then(() => commitAndPush(git, 'feature/' + featureName, 'chore: update version to ' + featureVersion, true))
     .then(() => printSummary(featureName, featureVersion));
-
-function switchToDevelopAndPull() {
-    return new Promise(resolve => {
-        git.pull((err) => handleError(err))
-            .checkout("develop", (err) => {
-                handleError(err);
-                console.log("Switch to develop and update!");
-                resolve();
-            });
-    });
-}
-
-function createFeatureBranch(featureName) {
-    return new Promise(resolve => {
-        git.checkoutLocalBranch("feature/" + featureName, (err) => {
-            handleError(err);
-            console.log("Created feature branch: feature/" + featureName);
-            resolve();
-        });
-    });
-}
-
-function getFeatureVersion(isLernaProject) {
-    return new Promise(resolve => {
-        git.show([isLernaProject ? "develop:lerna.json" : "develop:package.json"], (err, data) => {
-            handleError(err);
-            const developVersion = JSON.parse(data)["version"];
-            const baseVersion = developVersion.match(/\d+\.\d+\.\d+/)[0];
-            const featureVersion = baseVersion + "-feature-" + featureName + ".0";
-            resolve(featureVersion);
-        });
-    });
-}
-
-function changePackageJsonVersion(version) {
-    return new Promise((resolve) => {
-        exec(`npm version ${version} --no-git-tag-version`, err => {
-            handleError(err);
-            console.log("Version of package.json changed to " + version);
-            resolve();
-        });
-    });
-}
-
-function changeLernaProjectVersion(version) {
-    return new Promise((resolve) => {
-        exec(`lerna version ${version} --no-push --no-private --no-git-tag-version --yes`, err => {
-            handleError(err);
-            console.log("Version of lerna.json changed to " + version);
-            resolve();
-        });
-    });
-}
-
-function commitAndPush(featureName, featureVersion) {
-    return new Promise((resolve) => {
-        git.commit('chore: update version to ' + featureVersion, ['--all', '--no-edit'])
-            .then(() => {
-                console.log("Commit!");
-                return git.push('origin', 'feature/' + featureName, ['--set-upstream']);
-            })
-            .then(() => {
-                console.log("Push!");
-                resolve();
-            })
-            .catch(handleError);
-    });
-}
 
 function printSummary(featureName, featureVersion) {
     console.log("Summary of actions: ");
     console.log("A new branch feature/" + featureName + " was created, based on 'develop'");
     console.log("You are now on branch feature/" + featureName);
     console.log("Feature version now: " + featureVersion);
-}
-
-function handleError(err) {
-    if (err) {
-        console.log(err);
-        process.exit(1);
-    }
 }
