@@ -23,7 +23,7 @@ const packageJsonPath = path.resolve(process.cwd(), "package.json");
 const packageJsonFile = require(packageJsonPath);
 const { 
     checkUncommittedChanges, 
-    switchToDevelopAndPull, 
+    switchToBranchAndPull, 
     createReleaseBranch, 
     commitAndPush,
     handleError 
@@ -38,7 +38,7 @@ let releaseVersion;
 
 //TODO: add check that release is already in progress
 checkUncommittedChanges(git)
-    .then(() => switchToDevelopAndPull(git))
+    .then(() => switchToBranchAndPull(git, 'develop'))
     .then(() => checkPackageJsonVersions())
     .then(() => isLernaProject ? getLernaVersion() : getPackageJsonVersion())
     .then(releaseVersion => this.releaseVersion = releaseVersion + '-next.0')

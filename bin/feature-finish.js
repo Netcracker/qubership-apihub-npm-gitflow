@@ -21,9 +21,8 @@ const isLernaProject = fs.existsSync("./lerna.json");
 const { 
     checkUncommittedChanges, 
     getCurrentBranchName, 
-    switchToDevelopAndPull, 
-    getVersionFromBranch, 
-    commitAndPush, 
+    switchToBranchAndPull,
+    mergeFromBranch,
     deleteBranch,
     handleError 
 } = require('../lib/git-utils');
@@ -42,7 +41,7 @@ checkUncommittedChanges(git)
         this.featureBranch = branch;
     })
     .then(() => updateFeatureBranchToDevelop(git))
-    .then(() => switchToDevelopAndPull(git))
+    .then(() => switchToBranchAndPull(git, 'develop'))
     .then(() => mergeToDevelop(git, this.featureBranch))
     .then(() => getVersionFromBranch(git, 'develop', isLernaProject))
     .then((version) => isLernaProject ? changeLernaProjectVersion(version) : changePackageJsonVersion(version))

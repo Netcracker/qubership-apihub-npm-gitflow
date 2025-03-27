@@ -20,8 +20,8 @@ const git = require('simple-git')();
 const fs = require('fs');
 const {
     checkUncommittedChanges,
+    switchToBranchAndPull,
     createFeatureBranch,
-    switchToDevelopAndPull,
     getVersionFromBranch,
     commitAndPush
 } = require('../lib/git-utils');
@@ -47,7 +47,7 @@ if (!featureName || typeof featureName === "boolean") {
 let featureVersion;
 
 checkUncommittedChanges(git)
-    .then(() => switchToDevelopAndPull(git))
+    .then(() => switchToBranchAndPull(git, 'develop'))
     .then(() => createFeatureBranch(git, featureName))
     .then(() => getVersionFromBranch(git, 'develop', isLernaProject))
     .then(version => {

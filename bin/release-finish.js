@@ -22,9 +22,8 @@ const packageJsonPath = path.resolve(process.cwd(), "package.json");
 const packageJsonFile = require(packageJsonPath);
 const isLernaProject = fs.existsSync("./lerna.json");
 const { 
-    checkUncommittedChanges, 
-    pullAll, 
-    switchToBranch, 
+    checkUncommittedChanges,     
+    switchToBranchAndPull, 
     mergeFromBranch, 
     createAndPushTag, 
     push, 
@@ -41,8 +40,7 @@ let releaseBranch;
 let version;
 
 checkUncommittedChanges(git)
-    .then(() => pullAll(git))
-    .then(() => switchToBranch(git, 'release'))
+    .then(() => switchToBranchAndPull(git, 'release'))
     .then(() => validateDependencies())
     .then(() => {
         //Get version in release branch
@@ -52,18 +50,17 @@ checkUncommittedChanges(git)
                 this.releaseBranch = 'release';
             });
     })    
-    .then(() => switchToBranch(git, 'main'))
+    .then(() => switchToBranchAndPull(git, 'main'))
     .then(() => mergeFromBranch(git, this.releaseBranch))
     .then(() => isLernaProject ? changeLernaProjectVersion(this.version, 'main') : changePackageJsonVersion(this.version))
     .then(() => commit(this.version))
     .then(() => createAndPushTag(git, this.version))
     .then(() => push(git))
-    .then(() => switchToBranch(git, "develop"))
+    .then(() => switchToBranchAndPull(git, "develop"))
     .then(() => mergeFromBranch(git, 'main'))
     .then(() => isLernaProject ? getIncrementedLernaVersion() : getIncrementedPackageJsonVersion())
     .then(incVersion => isLernaProject ? changeLernaProjectVersion(incVersion + "-dev.0", "develop") : changePackageJsonVersion(incVersion + "-dev.0"))
-    .then(() => commit(this.version))
-    .then(() => push(git))
+    .then(() => commitAndPush(git, 'develop', 'chore: merge release ' + this.version + ' to develop'))
     .then(() => deleteBranch(git, this.releaseBranch));
 
 /**
