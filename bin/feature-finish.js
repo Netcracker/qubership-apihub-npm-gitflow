@@ -20,6 +20,7 @@ const fs = require("fs");
 const isLernaProject = fs.existsSync("./lerna.json");
 const { 
     checkUncommittedChanges, 
+    commitAndPush,
     getCurrentBranchName, 
     getVersionFromBranch,
     switchToBranchAndPull,    

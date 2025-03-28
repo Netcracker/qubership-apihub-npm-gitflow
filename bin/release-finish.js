@@ -22,7 +22,8 @@ const packageJsonPath = path.resolve(process.cwd(), "package.json");
 const packageJsonFile = require(packageJsonPath);
 const isLernaProject = fs.existsSync("./lerna.json");
 const { 
-    checkUncommittedChanges,     
+    checkUncommittedChanges,
+    commitAndPush,
     switchToBranchAndPull, 
     mergeFromBranch, 
     createAndPushTag, 
