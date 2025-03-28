@@ -17,136 +17,75 @@
 
 const git = require('simple-git')();
 const fs = require('fs');
-const exec = require('child_process').exec;
-
 const path = require('path');
 const packageJsonPath = path.resolve(process.cwd(), "package.json");
 const packageJsonFile = require(packageJsonPath);
 const isLernaProject = fs.existsSync("./lerna.json");
+const { 
+    checkUncommittedChanges,
+    commitAndPush,
+    switchToBranchAndPull, 
+    mergeFromBranch, 
+    createAndPushTag, 
+    push, 
+    deleteBranch,
+    handleError,
+    getVersionFromBranch 
+} = require('../lib/git-utils');
+const { 
+    changePackageJsonVersion, 
+    changeLernaProjectVersion 
+} = require('../lib/npm-utils');
 
 let releaseBranch;
 let version;
 
-pullAll()
-    .then(() => switchToBranch('release'))
+checkUncommittedChanges(git)
+    .then(() => switchToBranchAndPull(git, 'release'))
     .then(() => validateDependencies())
     .then(() => {
         //Get version in release branch
-        git.show([isLernaProject ? "release:lerna.json" : "release:package.json"], (err, data) => {
-            handleError(err);
-            this.version = JSON.parse(data)["version"].match(/\d+\.\d+\.\d+/)[0]
-            this.releaseBranch = 'release'        
-        })
+        return getVersionFromBranch(git, 'release', isLernaProject)
+            .then(version => {
+                this.version = version.match(/\d+\.\d+\.\d+/)[0];
+                this.releaseBranch = 'release';
+            });
     })    
-    .then(() => switchToBranch('main'))
-    .then(() => mergeFromBranch(this.releaseBranch))
+    .then(() => switchToBranchAndPull(git, 'main'))
+    .then(() => mergeFromBranch(git, this.releaseBranch))
     .then(() => isLernaProject ? changeLernaProjectVersion(this.version, 'main') : changePackageJsonVersion(this.version))
     .then(() => commit(this.version))
-    .then(() => createAndPushTag(this.version))
-    .then(() => push())
-    .then(() => switchToBranch("develop"))
-    .then(() => mergeFromBranch('main'))
+    .then(() => createAndPushTag(git, this.version))
+    .then(() => push(git))
+    .then(() => switchToBranchAndPull(git, "develop"))
+    .then(() => mergeFromBranch(git, 'main'))
     .then(() => isLernaProject ? getIncrementedLernaVersion() : getIncrementedPackageJsonVersion())
     .then(incVersion => isLernaProject ? changeLernaProjectVersion(incVersion + "-dev.0", "develop") : changePackageJsonVersion(incVersion + "-dev.0"))
-    .then(() => commit(this.version))
-    .then(() => push())
-    .then(() => deleteBranch(this.releaseBranch));
+    .then(() => commitAndPush(git, 'develop', 'chore: merge release ' + this.version + ' to develop'))
+    .then(() => deleteBranch(git, this.releaseBranch));
 
-function pullAll() {
-    return new Promise(resolve => {
-        git.raw(["pull", "--all"], (err) => {
-            handleError(err);
-            console.log("Pull all branches");
-            resolve();
-        })
-    });
-}
-
-function getCurrentBranchName() {
-    return new Promise(resolve => {
-        git.branch((err, data) => {
-            handleError(err);
-            let branch = data["current"];
-            console.log("Current branch: " + branch);
-            resolve(branch);
-        })
-    });
-}
-
-function switchToBranch(branch) {
-    return new Promise(resolve => {
-        git.checkout(branch, (err) => {
-            handleError(err);
-            console.log("Switch to " + branch + "!");
-            resolve();
-        })
-    })
-}
-
-function mergeFromBranch(branch) {
-    return new Promise(resolve => {
-        git.raw(["merge", "--no-ff", branch], (err) => {
-            handleError(err);
-            console.log("Merge from branch! " + branch);
-            resolve();
-        })
-    })
-}
-
-function changePackageJsonVersion(version) {
-    return new Promise((resolve) => {
-        //TODO: use npm to set version
-        packageJsonFile.version = version;
-        fs.writeFile(packageJsonPath, JSON.stringify(packageJsonFile, null, 2), err => {
-            handleError(err);
-            console.log("Version of package.json changed to " + version);
-            resolve();
-        });
-    });
-}
-
-function changeLernaProjectVersion(version, branchName) {
-    return new Promise((resolve) => {
-        exec(`lerna version ${version} --no-push --no-private --no-git-tag-version --allow-branch ${branchName} --yes`, err => {
-            handleError(err);
-            resolve();
-        });
-    });
-}
-
-function createAndPushTag(version) {
-    return new Promise(resolve => {
-        git.raw(["tag", "-a", version, "-m chore: release :" + version], (err) => {
-            handleError(err);
-            console.log("Git tag. Version: " + version);
-        }).raw(["push", "origin", version], (err) => {
-            handleError(err);
-            console.log("Git push tags");
-            resolve();
-        })
-    })
-}
-
+/**
+ * Commits changes with a release message
+ * 
+ * @param {string} message - The version to include in the commit message
+ * @returns {Promise<void>} A promise that resolves when the commit is complete
+ */
 function commit(message) {
     return new Promise((resolve) => {
-        git.raw(["commit", "-a", "--no-edit", "-m chore: release: " + message], (err) => {
-            handleError(err);
-            console.log("Commit!");
-            resolve();
-        })
+        git.commit('chore: release: ' + message, ['--all', '--no-edit'])
+            .then(() => {
+                console.log("Commit!");
+                resolve();
+            })
+            .catch(handleError);
     });
 }
 
-function push() {
-    return new Promise((resolve) => {
-        git.raw(["push"], (err) => {
-            handleError(err);
-            console.log("Push!");
-            resolve();
-        })
-    });
-}
-
+/**
+ * Gets the incremented version from lerna.json
+ * 
+ * @returns {Promise<string>} A promise that resolves with the incremented version
+ */
 function getIncrementedLernaVersion() {
     return new Promise((resolve) => {
         const lernaFile = require(path.resolve(process.cwd(), "lerna.json"));
@@ -156,6 +95,11 @@ function getIncrementedLernaVersion() {
     });
 }
 
+/**
+ * Gets the incremented version from package.json
+ * 
+ * @returns {Promise<string>} A promise that resolves with the incremented version
+ */
 function getIncrementedPackageJsonVersion() {
     return new Promise((resolve) => {
         let version = packageJsonFile.version.match(/\d+\.\d+\.\d+/)[0];
@@ -164,24 +108,11 @@ function getIncrementedPackageJsonVersion() {
     });
 }
 
-function deleteBranch(branch) {
-    return new Promise((resolve) => {
-        git.raw(["push", "origin", "--delete", branch], (err) => handleError(err))
-            .branch(["-D", branch], (err) => {
-                handleError(err);
-                console.log("Branch " + branch + " was deleted!");
-                resolve();
-            });
-    });
-}
-
-function handleError(err) {
-    if (err) {
-        console.log(err);
-        process.exit(1);
-    }
-}
-
+/**
+ * Validates that all dependencies are using release versions
+ * 
+ * @returns {Promise<void>} A promise that resolves when validation is complete
+ */
 function validateDependencies() {
     return new Promise((resolve) => {
         const packageJson = require(packageJsonPath);
