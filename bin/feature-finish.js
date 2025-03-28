@@ -21,8 +21,8 @@ const isLernaProject = fs.existsSync("./lerna.json");
 const { 
     checkUncommittedChanges, 
     getCurrentBranchName, 
-    switchToBranchAndPull,
-    mergeFromBranch,
+    getVersionFromBranch,
+    switchToBranchAndPull,    
     deleteBranch,
     handleError 
 } = require('../lib/git-utils');
