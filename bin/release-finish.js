@@ -60,7 +60,7 @@ checkUncommittedChanges(git)
     .then(() => switchToBranchAndPull(git, "develop"))
     .then(() => mergeFromBranch(git, 'main'))
     .then(() => isLernaProject ? getIncrementedLernaVersion() : getIncrementedPackageJsonVersion())
-    .then(incVersion => isLernaProject ? changeLernaProjectVersion(incVersion + "-dev.0", "develop") : changePackageJsonVersion(incVersion + "-dev.0"))
+    .then(incVersion => isLernaProject ? changeLernaProjectVersion(incVersion, "develop") : changePackageJsonVersion(incVersion))
     .then(() => commitAndPush(git, 'develop', 'chore: merge release ' + this.version + ' to develop'))
     .then(() => deleteBranch(git, this.releaseBranch));
 

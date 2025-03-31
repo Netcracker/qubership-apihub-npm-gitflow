@@ -29,45 +29,16 @@ const {
     handleError 
 } = require('../lib/git-utils');
 const { 
-    changePackageJsonVersion, 
-    changeLernaProjectVersion, 
     updateDistTagsDependenciesAndLockFiles 
 } = require('../lib/npm-utils');
-
-let releaseVersion;
 
 //TODO: add check that release is already in progress
 checkUncommittedChanges(git)
     .then(() => switchToBranchAndPull(git, 'develop'))
-    .then(() => checkPackageJsonVersions())
-    .then(() => isLernaProject ? getLernaVersion() : getPackageJsonVersion())
-    .then(releaseVersion => this.releaseVersion = releaseVersion + '-next.0')
-    .then(() => createReleaseBranch(git, 'release', this.releaseVersion))
-    .then(() => isLernaProject ? changeLernaProjectVersion(this.releaseVersion, 'release') : changePackageJsonVersion(this.releaseVersion))
+    .then(() => checkPackageJsonVersions())    
+    .then(() => createReleaseBranch(git))    
     .then(() => updateDistTagsDependenciesAndLockFiles(isLernaProject, version => version === 'dev', 'next'))
-    .then(() => commitAndPush(git, 'release', 'chore: release start, version: ' + this.releaseVersion, true));
-
-/**
- * Gets the version from package.json without any pre-release identifiers
- * 
- * @returns {Promise<string>} A promise that resolves with the version
- */
-function getPackageJsonVersion() {
-    return new Promise((resolve) => {
-        resolve(packageJsonFile.version.match(/\d+\.\d+\.\d+/)[0]);
-    });
-}
-
-/**
- * Gets the version from lerna.json without any pre-release identifiers
- * 
- * @returns {Promise<string>} A promise that resolves with the version
- */
-function getLernaVersion() {
-    return new Promise((resolve) => {
-        resolve(require(path.resolve(process.cwd(), "lerna.json")).version.match(/\d+\.\d+\.\d+/)[0]);
-    });
-}
+    .then(() => commitAndPush(git, 'release', 'chore: release start'));
 
 /**
  * Checks package.json versions and dependencies
