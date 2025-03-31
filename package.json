@@ -17,7 +17,8 @@
     "feature-finish": "bin/feature-finish.js",
     "feature-start": "bin/feature-start.js",
     "release-finish": "bin/release-finish.js",
-    "release-start": "bin/release-start.js"
+    "release-start": "bin/release-start.js",
+    "update-lock-file": "bin/update-lock-file.js"
   },
   "dependencies": {
     "command-line-args": "^5.0.2",
@@ -34,6 +35,7 @@
     "feature-finish": "node bin/feature-finish.js",
     "release-start": "node bin/release-start.js",
     "release-finish": "node bin/release-finish.js",
+    "update-lock-file": "node bin/update-lock-file.js",
     "clean": "rimraf build"
   }
 }
