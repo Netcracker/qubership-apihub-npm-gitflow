@@ -21,14 +21,9 @@ const fs = require('fs');
 const {
     checkUncommittedChanges,
     switchToBranchAndPull,
-    createFeatureBranch,
-    getVersionFromBranch,
-    commitAndPush
+    createFeatureBranch,    
+    pushNewBranch
 } = require('../lib/git-utils');
-const {
-    changePackageJsonVersion,
-    changeLernaProjectVersion
-} = require('../lib/npm-utils');
 
 const optionDefinitions = [
     {name: 'featureName', alias: 'f', type: String, defaultOption: true}
@@ -37,31 +32,20 @@ const optionDefinitions = [
 const options = commandLineArgs(optionDefinitions);
 
 const featureName = options.featureName;
-const isLernaProject = fs.existsSync("./lerna.json");
 
 if (!featureName || typeof featureName === "boolean") {
     console.log("Feature name must not be empty!");
     process.exit(0);
 }
 
-let featureVersion;
-
 checkUncommittedChanges(git)
     .then(() => switchToBranchAndPull(git, 'develop'))
-    .then(() => createFeatureBranch(git, featureName))
-    .then(() => getVersionFromBranch(git, 'develop', isLernaProject))
-    .then(version => {
-        const baseVersion = version.match(/\d+\.\d+\.\d+/)[0];
-        featureVersion = baseVersion + "-feature-" + featureName + ".0";
-        return featureVersion;
-    })
-    .then(version => isLernaProject ? changeLernaProjectVersion(version) : changePackageJsonVersion(version))    
-    .then(() => commitAndPush(git, 'feature/' + featureName, 'chore: update version to ' + featureVersion, true))
-    .then(() => printSummary(featureName, featureVersion));
+    .then(() => createFeatureBranch(git, featureName))    
+    .then(() => pushNewBranch(git, 'feature/' + featureName))
+    .then(() => printSummary(featureName));
 
-function printSummary(featureName, featureVersion) {
+function printSummary(featureName) {
     console.log("Summary of actions: ");
     console.log("A new branch feature/" + featureName + " was created, based on 'develop'");
     console.log("You are now on branch feature/" + featureName);
-    console.log("Feature version now: " + featureVersion);
 }
