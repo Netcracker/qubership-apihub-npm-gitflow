@@ -88,7 +88,7 @@ async function processLockFile(scope) {
             return;
         }
         
-        console.log(`Found ${packagesToUpdate.length} packages with scope ${scope}: packagesToUpdate.join(' ')`);        
+        console.log(`Found ${packagesToUpdate.length} packages with scope ${scope}: ${packagesToUpdate.join(' ')}`);        
         
         // Read and update lock file
         const lockFileContent = fs.readFileSync(lockFilePath, 'utf8');
