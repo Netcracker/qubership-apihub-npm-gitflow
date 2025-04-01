@@ -39,6 +39,37 @@ if (!scope.startsWith('@') || scope.includes('/')) {
 }
 
 /**
+ * Collects package names with the specified scope from package.json
+ * 
+ * @param {string} scope - The npm scope to look for
+ * @returns {Array} List of full package names with the specified scope
+ */
+function collectScopePackages(scope) {
+    const packages = new Set();
+    
+    try {
+        const packageJsonPath = path.resolve(process.cwd(), 'package.json');
+        const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+        
+        // Check dependencies, devDependencies, and peerDependencies
+        ['dependencies', 'devDependencies', 'peerDependencies'].forEach(depType => {
+            if (packageJson[depType]) {
+                Object.keys(packageJson[depType]).forEach(depName => {
+                    if (depName.startsWith(scope)) {
+                        packages.add(depName);
+                    }
+                });
+            }
+        });
+    } catch (error) {
+        console.error('Error reading package.json:', error);
+        process.exit(1);
+    }
+    
+    return Array.from(packages);
+}
+
+/**
  * Processes the package lock file and updates packages with the specified scope
  * 
  * @param {string} scope - The npm scope to look for (e.g. '@company')
@@ -49,11 +80,8 @@ async function processLockFile(scope) {
         const lockFilePath = getLockFilePath();
         console.log(`Processing ${path.basename(lockFilePath)}...`);
         
-        const lockFileContent = fs.readFileSync(lockFilePath, 'utf8');
-        const lockFileData = JSON.parse(lockFileContent);
-        
-        // Get packages with the specified scope
-        const packagesToUpdate = collectScopePackages(lockFileData, scope);
+        // Get packages with the specified scope from package.json
+        const packagesToUpdate = collectScopePackages(scope);
         
         if (packagesToUpdate.length === 0) {
             console.log(`No packages found with scope ${scope}`);
@@ -62,6 +90,10 @@ async function processLockFile(scope) {
         
         console.log(`Found ${packagesToUpdate.length} packages with scope ${scope}:`);
         console.log(packagesToUpdate.join(' '));
+        
+        // Read and update lock file
+        const lockFileContent = fs.readFileSync(lockFilePath, 'utf8');
+        const lockFileData = JSON.parse(lockFileContent);
         
         // Remove node_modules entries
         const updatedLockFileData = removeNodeModulesEntries(lockFileData, scope);
@@ -96,41 +128,6 @@ function getLockFilePath() {
     } else {
         throw new Error('No package-lock.json or npm-shrinkwrap.json found in the root directory');
     }
-}
-
-/**
- * Collects package names with the specified scope from the lock file
- * 
- * @param {Object} lockFileData - The parsed lock file data
- * @param {string} scope - The npm scope to look for
- * @returns {Array} List of full package names with the specified scope
- */
-function collectScopePackages(lockFileData, scope) {
-    const packages = new Set();
-    
-    // Only process if packages object exists in the lock file
-    if (!lockFileData.packages) {
-        return [];
-    }
-    
-    // Get the root package, which has "" as the key
-    const rootPackage = lockFileData.packages[""];
-    if (!rootPackage) {
-        return [];
-    }
-    
-    // Check dependencies, devDependencies, and peerDependencies of the root package
-    ['dependencies', 'devDependencies', 'peerDependencies'].forEach(depType => {
-        if (rootPackage[depType]) {
-            Object.keys(rootPackage[depType]).forEach(depName => {
-                if (depName.startsWith(scope)) {
-                    packages.add(depName);
-                }
-            });
-        }
-    });
-    
-    return Array.from(packages);
 }
 
 /**
