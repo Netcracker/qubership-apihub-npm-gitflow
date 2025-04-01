@@ -61,7 +61,7 @@ async function processLockFile(scope) {
         }
         
         console.log(`Found ${packagesToUpdate.length} packages with scope ${scope}:`);
-        console.log(packagesToUpdate.join('\n'));
+        console.log(packagesToUpdate.join(' '));
         
         // Remove node_modules entries
         const updatedLockFileData = removeNodeModulesEntries(lockFileData, scope);
@@ -175,7 +175,7 @@ function updatePackages(packages) {
         }
         
         const updateCommand = `npm update ${packages.join(' ')}`;
-        console.log(`Running: ${updateCommand}`);
+        console.log(`${updateCommand}`);
         
         exec(updateCommand, (error, stdout, stderr) => {
             if (error) {
