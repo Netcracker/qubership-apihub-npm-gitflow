@@ -20,10 +20,10 @@ const git = require('simple-git')();
 const { startTopicBranch } = require('../lib/topic-branch-scripts');
 
 const optionDefinitions = [
-    {name: 'featureName', alias: 'f', type: String, defaultOption: true}
+    {name: 'bugfixName', alias: 'b', type: String, defaultOption: true}
 ];
 
 const options = commandLineArgs(optionDefinitions);
-const featureName = options.featureName;
+const bugfixName = options.bugfixName;
 
-startTopicBranch(git, 'feature', featureName);
+startTopicBranch(git, 'bugfix', bugfixName); 
