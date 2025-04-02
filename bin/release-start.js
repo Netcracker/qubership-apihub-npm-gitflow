@@ -26,15 +26,23 @@ const {
     switchToBranchAndPull, 
     createReleaseBranch, 
     commitAndPush,
-    handleError 
+    handleError,
+    checkRemoteBranchExists
 } = require('../lib/git-utils');
 const { 
     updateDistTagsDependenciesAndLockFiles 
 } = require('../lib/npm-utils');
 
-//TODO: add check that release is already in progress
+// Check if release is already in progress and exit if true
 checkUncommittedChanges(git)
-    .then(() => switchToBranchAndPull(git, 'develop'))
+    .then(() => checkRemoteBranchExists(git, 'release'))
+    .then(exists => {
+        if (exists) {
+            console.error('Error: Release branch already exists. A release is already in progress.');
+            process.exit(1);
+        }
+        return switchToBranchAndPull(git, 'develop');
+    })
     .then(() => checkPackageJsonVersions())    
     .then(() => createReleaseBranch(git))    
     .then(() => updateDistTagsDependenciesAndLockFiles(isLernaProject, version => version === 'dev', 'next'))

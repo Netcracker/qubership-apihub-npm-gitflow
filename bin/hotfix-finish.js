@@ -18,5 +18,5 @@
 const git = require('simple-git')();
 const { finishReleaseBranch } = require('../lib/release-branch-scripts');
 
-// Execute the release finish workflow
-finishReleaseBranch(git, 'release');
+// Execute the hotfix finish workflow
+finishReleaseBranch(git, 'hotfix'); 
