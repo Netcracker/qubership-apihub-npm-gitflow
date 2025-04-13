@@ -15,7 +15,15 @@
  * limitations under the License.
  */
 
+const commandLineArgs = require("command-line-args");
 const git = require("simple-git")();
 const { finishTopicBranch } = require('../lib/topic-branch-scripts');
 
-finishTopicBranch(git, 'feature');
+const optionDefinitions = [
+    { name: 'squash', alias: 's', type: Boolean, defaultValue: false },
+    { name: 'message', alias: 'm', type: String }
+];
+
+const options = commandLineArgs(optionDefinitions);
+
+finishTopicBranch(git, 'feature', options.squash, options.message);

@@ -12,7 +12,13 @@ Use in a console or as a part of CI process.
 feature-start <feature-name>
 ```
 ```shell
-feature-finish
+feature-finish [--squash|-s] [--message|-m "Custom commit message"]
+```
+```shell
+bugfix-start <bugfix-name>
+```
+```shell
+bugfix-finish [--squash|-s] [--message|-m "Custom commit message"]
 ```
 ```shell
 release-start [version]

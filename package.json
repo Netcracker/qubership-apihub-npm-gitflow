@@ -36,9 +36,9 @@
   },
   "scripts": {
     "feature-start": "node bin/feature-start.js --featureName",
-    "feature-finish": "node bin/feature-finish.js",
+    "feature-finish": "node bin/feature-finish.js [--squash] [--message]",
     "bugfix-start": "node bin/bugfix-start.js --bugfixName",
-    "bugfix-finish": "node bin/bugfix-finish.js",
+    "bugfix-finish": "node bin/bugfix-finish.js [--squash] [--message]",
     "release-start": "node bin/release-start.js",
     "release-finish": "node bin/release-finish.js",
     "hotfix-start": "node bin/hotfix-start.js",
