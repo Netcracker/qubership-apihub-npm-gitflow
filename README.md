@@ -15,7 +15,7 @@ feature-start <feature-name>
 feature-finish
 ```
 ```shell
-release-start
+release-start [version]
 ```
 ```shell
 release-finish

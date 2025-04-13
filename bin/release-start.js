@@ -30,8 +30,24 @@ const {
     checkRemoteBranchExists
 } = require('../lib/git-utils');
 const { 
-    updateDistTagsDependenciesAndLockFiles 
+    updateDistTagsDependenciesAndLockFiles,
+    changePackageJsonVersion,
+    changeLernaProjectVersion
 } = require('../lib/npm-utils');
+
+// Parse command line arguments to get optional version
+const args = process.argv.slice(2);
+let specifiedVersion = null;
+
+// Check if version is specified
+if (args.length > 0) {
+    specifiedVersion = args[0];
+    // Simple validation for semver format
+    if (!specifiedVersion.match(/^\d+\.\d+\.\d+$/)) {
+        console.error('Error: Version must be in format x.y.z');
+        process.exit(1);
+    }
+}
 
 // Check if release is already in progress and exit if true
 checkUncommittedChanges(git)
@@ -44,9 +60,36 @@ checkUncommittedChanges(git)
         return switchToBranchAndPull(git, 'develop');
     })
     .then(() => checkPackageJsonVersions())    
-    .then(() => createReleaseBranch(git))    
+    .then(() => createReleaseBranch(git))
+    .then(() => {
+        // If version is specified, update package.json and/or lerna.json
+        if (specifiedVersion) {
+            console.log(`Setting version to ${specifiedVersion} in release branch`);
+            const versionPromise = isLernaProject 
+                ? changeLernaProjectVersion(specifiedVersion, 'release')
+                : changePackageJsonVersion(specifiedVersion);
+            return versionPromise;
+        }
+        return Promise.resolve();
+    })
     .then(() => updateDistTagsDependenciesAndLockFiles(isLernaProject, version => version === 'dev', 'next'))
-    .then(() => commitAndPush(git, 'release', 'chore: release start'));
+    .then(() => {
+        const commitMessage = specifiedVersion 
+            ? `chore: release start ${specifiedVersion}` 
+            : 'chore: release start';
+        return commitAndPush(git, 'release', commitMessage);
+    })
+    .then(() => {
+        console.log("Summary of actions:");
+        console.log("- A new release branch was created from develop");
+        if (specifiedVersion) {
+            console.log(`- Version was set to ${specifiedVersion} in the release branch`);
+        }
+        console.log("- Dependencies with 'dev' tag were updated to 'next'");
+        console.log("- All changes were committed and pushed to remote");
+        console.log("\nYou can now make changes to prepare for the release.");
+        console.log("When you're ready to finish the release, run 'release-finish'.");
+    });
 
 /**
  * Checks package.json versions and dependencies
