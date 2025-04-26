@@ -30,7 +30,7 @@ const {
     checkRemoteBranchExists
 } = require('../lib/git-utils');
 const { 
-    updateDistTagsDependenciesAndLockFiles,
+    updateDistTagsDependencies,
     changePackageJsonVersion,
     changeLernaProjectVersion
 } = require('../lib/npm-utils');
@@ -72,7 +72,7 @@ checkUncommittedChanges(git)
         }
         return Promise.resolve();
     })
-    .then(() => updateDistTagsDependenciesAndLockFiles(isLernaProject, version => version === 'dev', 'next'))
+    .then(() => updateDistTagsDependencies(isLernaProject, version => version === 'dev', 'next'))
     .then(() => {
         const commitMessage = specifiedVersion 
             ? `chore: release start ${specifiedVersion}` 
