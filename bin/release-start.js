@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+const commandLineArgs = require("command-line-args");
 const git = require('simple-git')();
 const fs = require('fs');
 const path = require('path');
@@ -32,19 +33,30 @@ const {
 const { 
     updateDistTagsDependencies,
     changePackageJsonVersion,
-    changeLernaProjectVersion
+    changeLernaProjectVersion,
+    getVersionCore
 } = require('../lib/npm-utils');
 
-// Parse command line arguments to get optional version
-const args = process.argv.slice(2);
-let specifiedVersion = null;
+// Parse command line arguments
+const optionDefinitions = [
+    { name: 'version', type: String, defaultOption: true, defaultValue: '' }
+];
 
-// Check if version is specified
-if (args.length > 0) {
-    specifiedVersion = args[0];
-    // Simple validation for semver format
-    if (!specifiedVersion.match(/^\d+\.\d+\.\d+$/)) {
-        console.error('Error: Version must be in format x.y.z');
+const options = commandLineArgs(optionDefinitions);
+let specifiedVersion = options.version;
+
+// Check if version is specified and validate
+if (specifiedVersion) {
+    // Validate version using getVersionCore
+    const versionCore = getVersionCore(specifiedVersion);
+    if (!versionCore) {
+        console.error('Error: Version must be a valid semver format (e.g., 1.2.3)');
+        process.exit(1);
+    }
+    
+    // Ensure specifiedVersion equals its version core
+    if (specifiedVersion !== versionCore) {
+        console.error(`Error: Version should only include Major.Minor.Patch`);
         process.exit(1);
     }
 }
