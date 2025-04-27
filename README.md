@@ -9,31 +9,31 @@ Add as dev dependency to you project.
 
 Use in a console or as a part of CI process.
 ```shell
-feature-start <feature-name>
+npx feature-start <feature-name>
 ```
 ```shell
-feature-finish [--squash|-s] [--message|-m "Custom commit message"]
+npx feature-finish [--squash|-s] [--message|-m "Custom commit message"]
 ```
 ```shell
-bugfix-start <bugfix-name>
+npx bugfix-start <bugfix-name>
 ```
 ```shell
-bugfix-finish [--squash|-s] [--message|-m "Custom commit message"]
+npx bugfix-finish [--squash|-s] [--message|-m "Custom commit message"]
 ```
 ```shell
-release-start [version]
+npx release-start [version]
 ```
 ```shell
-release-finish
+npx release-finish
 ```
 ```shell
-hotfix-start
+npx hotfix-start
 ```
 ```shell
-hotfix-finish
+npx hotfix-finish
 ```
 ```shell
-update-lock-file <scope>
+npx update-lock-file <scope>
 ```
 
 ## Feature and Bugfix Commands

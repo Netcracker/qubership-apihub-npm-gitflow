@@ -35,15 +35,6 @@
     "rimraf": "2.6.2"
   },
   "scripts": {
-    "feature-start": "node bin/feature-start.js --featureName",
-    "feature-finish": "node bin/feature-finish.js [--squash] [--message]",
-    "bugfix-start": "node bin/bugfix-start.js --bugfixName",
-    "bugfix-finish": "node bin/bugfix-finish.js [--squash] [--message]",
-    "release-start": "node bin/release-start.js",
-    "release-finish": "node bin/release-finish.js",
-    "hotfix-start": "node bin/hotfix-start.js",
-    "hotfix-finish": "node bin/hotfix-finish.js",
-    "update-lock-file": "node bin/update-lock-file.js",
     "clean": "rimraf build"
   }
 }
