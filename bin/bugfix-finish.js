@@ -17,13 +17,13 @@
 
 const commandLineArgs = require("command-line-args");
 const git = require('simple-git')();
-const { startTopicBranch } = require('../lib/topic-branch-scripts');
+const { finishTopicBranch } = require('../lib/topic-branch-scripts');
 
 const optionDefinitions = [
-    {name: 'featureName', alias: 'f', type: String, defaultOption: true}
+    { name: 'squash', alias: 's', type: Boolean, defaultValue: false },
+    { name: 'message', alias: 'm', type: String }
 ];
 
 const options = commandLineArgs(optionDefinitions);
-const featureName = options.featureName;
 
-startTopicBranch(git, 'feature', featureName);
+finishTopicBranch(git, 'bugfix', options.squash, options.message); 

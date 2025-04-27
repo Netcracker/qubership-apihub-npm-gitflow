@@ -2,7 +2,7 @@
   "name": "@netcracker/qubership-apihub-npm-gitflow",
   "description": "Simple git flow API for node.js",
   "license": "Apache-2.0",
-  "version": "2.2.2",
+  "version": "3.0.0",
   "keywords": [
     "git",
     "git flow"
@@ -16,24 +16,25 @@
   "bin": {
     "feature-finish": "bin/feature-finish.js",
     "feature-start": "bin/feature-start.js",
+    "bugfix-finish": "bin/bugfix-finish.js",
+    "bugfix-start": "bin/bugfix-start.js",
     "release-finish": "bin/release-finish.js",
-    "release-start": "bin/release-start.js"
+    "release-start": "bin/release-start.js",
+    "hotfix-start": "bin/hotfix-start.js",
+    "hotfix-finish": "bin/hotfix-finish.js",
+    "update-lock-file": "bin/update-lock-file.js"
   },
   "dependencies": {
     "command-line-args": "^5.0.2",
     "edit-json-file": "^1.0.8",
     "semver": "^5.5.1",
-    "simple-git": "^3.18.0",
+    "simple-git": "^3.27.0",
     "time-stamp": "^2.0.0"
   },
   "devDependencies": {
     "rimraf": "2.6.2"
   },
   "scripts": {
-    "feature-start": "node bin/feature-start.js --featureName",
-    "feature-finish": "node bin/feature-finish.js",
-    "release-start": "node bin/release-start.js",
-    "release-finish": "node bin/release-finish.js",
     "clean": "rimraf build"
   }
 }

@@ -15,138 +15,15 @@
  * limitations under the License.
  */
 
+const commandLineArgs = require("command-line-args");
 const git = require("simple-git")();
-const fs = require("fs");
-const exec = require('child_process').exec;
+const { finishTopicBranch } = require('../lib/topic-branch-scripts');
 
-const path = require('path');
-const isLernaProject = fs.existsSync("./lerna.json");
-const { updateDistTagsDependenciesAndLockFiles } = require('../lib/update-dist-tags');
+const optionDefinitions = [
+    { name: 'squash', alias: 's', type: Boolean, defaultValue: false },
+    { name: 'message', alias: 'm', type: String }
+];
 
-let featureBranch;
+const options = commandLineArgs(optionDefinitions);
 
-getCurrentBranchName()
-    .then(branch => {
-        if (branch.search("feature") === -1) handleError("You are trying to finish not feature branch: " + branch);
-        this.featureBranch = branch;
-    })
-    .then(() => updateFeatureBranchToDevelop())
-    .then(() => switchToDevelopAndPull())
-    .then(() => mergeToDevelop(this.featureBranch))
-    .then(() => getDevelopVersion())
-    .then((version) => isLernaProject ? changeLernaVersion(version) : changePackageJsonVersion(version))
-    .then(() => updateDistTagsDependenciesAndLockFiles(isLernaProject, version => version.startsWith('feature'), 'dev'))
-    .then(() => commitAndPush(this.featureBranch))
-    .then(() => deleteFeatureBranch(this.featureBranch));
-
-function getCurrentBranchName() {
-    return new Promise(resolve => {
-        git.branch((err, data) => {
-            handleError(err);
-            let branch = data["current"];
-            console.log("Current branch: " + branch);
-            resolve(branch);
-        })
-    });
-}
-
-function updateFeatureBranchToDevelop() {
-    return new Promise(resolve => {
-        git.raw(["pull", "--progress", "-v", "--no-rebase", "origin", "develop"], (err) => {
-            handleError(err);
-            resolve();
-        })
-    })
-}
-
-function switchToDevelopAndPull() {
-    return new Promise(resolve => {
-        git.checkout("develop")
-            .pull((err) => {
-                handleError(err);
-                console.log("Switch to develop and update!");
-                resolve();
-            })
-    })
-}
-
-function mergeToDevelop(branch) {
-    return new Promise(resolve => {
-        git.mergeFromTo(branch, "develop", ["--no-edit", "--no-commit", "--no-ff"], (err) => {
-            handleError(err);
-            console.log("Merge from " + branch + " to develop. You are now at develop.");
-            resolve();
-        })
-    });
-}
-
-function getDevelopVersion() {
-    return new Promise((resolve) => {
-        git.show([isLernaProject ? "develop:lerna.json" : "develop:package.json"], (err, data) => {
-            handleError(err);
-            let version = JSON.parse(data)["version"];
-            console.log("Develop version: " + version);
-            resolve(version);
-        })
-    });
-}
-
-function changePackageJsonVersion(version) {
-    return new Promise((resolve) => {
-        executeCommand("npm version --no-git-tag-version " + version).then(() => {
-            console.log("Version of package.json changed to " + version);
-            resolve();
-        });
-    });
-}
-
-function changeLernaVersion(version) {
-    return new Promise((resolve) => {
-        exec(`lerna version ${version} --no-push --no-private --no-git-tag-version --yes`, err => {
-            handleError(err);
-            resolve();
-        });
-    });
-}
-
-function commitAndPush(branch) {
-    return new Promise((resolve) => {
-        git.raw(["commit", "-a", "--no-edit", "-m chore: merge from " + branch + " to develop"], (err) => {
-            handleError(err);
-            console.log("Commit!")
-        }).push("origin", "develop", (err) => {
-            handleError(err);
-            console.log("Push!");
-            resolve();
-        });
-    });
-}
-
-function deleteFeatureBranch(branch) {
-    return new Promise((resolve) => {
-        git.raw(["push", "origin", "--delete", branch], (err) => {
-            handleError(err);
-        })
-            .branch(["-D", branch], (err) => {
-                handleError(err);
-                console.log("Branch " + branch + " was deleted!");
-                resolve();
-            });
-    });
-}
-
-function handleError(err) {
-    if (err) {
-        console.log(err);
-        process.exit(1);
-    }
-}
-
-function executeCommand(command) {
-    return new Promise((resolve) => {
-        exec(command, err => {
-            handleError(err);
-            resolve();
-        });
-    });
-}
+finishTopicBranch(git, 'feature', options.squash, options.message);

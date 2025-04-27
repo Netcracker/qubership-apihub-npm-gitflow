@@ -16,14 +16,21 @@
  */
 
 const commandLineArgs = require("command-line-args");
-const git = require('simple-git')();
-const { startTopicBranch } = require('../lib/topic-branch-scripts');
+const lockFileUtils = require('../lib/lock-file-utils');
 
 const optionDefinitions = [
-    {name: 'featureName', alias: 'f', type: String, defaultOption: true}
+    { name: 'scope', alias: 's', type: String, defaultOption: true }
 ];
 
 const options = commandLineArgs(optionDefinitions);
-const featureName = options.featureName;
+const scope = options.scope;
 
-startTopicBranch(git, 'feature', featureName);
+if (!lockFileUtils.validateScope(scope)) {
+    process.exit(0);
+}
+
+// Run the main function
+lockFileUtils.processLockFile(scope).catch(error => {
+    console.error('Error:', error);
+    process.exit(1);
+}); 

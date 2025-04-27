@@ -15,15 +15,8 @@
  * limitations under the License.
  */
 
-const commandLineArgs = require("command-line-args");
 const git = require('simple-git')();
-const { startTopicBranch } = require('../lib/topic-branch-scripts');
+const { finishReleaseBranch } = require('../lib/release-branch-scripts');
 
-const optionDefinitions = [
-    {name: 'featureName', alias: 'f', type: String, defaultOption: true}
-];
-
-const options = commandLineArgs(optionDefinitions);
-const featureName = options.featureName;
-
-startTopicBranch(git, 'feature', featureName);
+// Execute the hotfix finish workflow
+finishReleaseBranch(git, 'hotfix'); 
