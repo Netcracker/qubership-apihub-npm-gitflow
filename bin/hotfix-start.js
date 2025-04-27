@@ -46,8 +46,13 @@ checkUncommittedChanges(git)
         return switchToBranchAndPull(git, 'main');
     })
     .then(() => getVersionFromBranch(git, 'main', isLernaProject))
-    .then(version => getIncrementedPatchVersion(version))
-    .then(hotfixVersion => createHotfixBranch(hotfixVersion))
+    .then(version => {
+        const hotfixVersion = getIncrementedPatchVersion(version);
+        if (!hotfixVersion) {
+            handleError(new Error(`Invalid version format: ${version}`));
+        }
+        return createHotfixBranch(hotfixVersion);
+    })
     .then(hotfixVersion => commitAndPush(git, 'hotfix', `chore: hotfix started, hotfix version ${hotfixVersion}`));
 
 /**
