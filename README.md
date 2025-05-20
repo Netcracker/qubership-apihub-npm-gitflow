@@ -62,14 +62,28 @@ Creates a release branch from develop and optionally sets version. If a version 
 [Dist-tag](https://docs.npmjs.com/adding-dist-tags-to-packages) dependencies to `dev` tag are replaced to `next` dist-tag dependencies in `package.json` file. 
 
 Lock file is not updated in development branches to reduce merge conflicts (assumed to be auto-update by CI or updated manually locally for development branches).
-### `release-finish`
-Merges release branch to main and back to develop
+### `release-finish [--no-version-check <package1> [<package2> ...]]`
+Merges release branch to main and back to develop.
+
+The `--no-version-check` argument allows you to specify a list of packages that should be excluded from version validation. This is useful for packages that follow eternal alpha/beta approach (e.g. '@mui/lab'). If specified, at least one package must be provided.
+
+Example:
+```shell
+npx release-finish --no-version-check @mui/lab
+```
 
 ## Hotfix Commands
 ### `hotfix-start`
 Creates a hotfix branch from main and increments the patch version
-### `hotfix-finish`
-Merges hotfix branch to main and back to develop
+### `hotfix-finish [--no-version-check <package1> [<package2> ...]]`
+Merges hotfix branch to main and back to develop.
+
+The `--no-version-check` argument allows you to specify a list of packages that should be excluded from version validation. This is useful for packages that follow eternal alpha/beta approach (e.g. '@mui/lab'). If specified, at least one package must be provided.
+
+Example:
+```shell
+npx hotfix-finish --no-version-check @mui/lab
+```
 
 ## Lock File Utilities
 ### `update-lock-file <scope>`
