@@ -16,7 +16,31 @@
  */
 
 const git = require('simple-git')();
+const commandLineArgs = require('command-line-args');
 const { finishReleaseBranch } = require('../lib/release-branch-scripts');
 
+// Define command line options
+const optionDefinitions = [
+    {
+        name: 'no-version-check',
+        type: String,
+        multiple: true,
+        defaultValue: [],
+        description: 'List of packages to exclude from version validation'
+    }
+];
+
+// Parse command line arguments
+const options = commandLineArgs(optionDefinitions);
+
+// Validate that if --no-version-check is specified, it must have at least one package
+if (process.argv.includes('--no-version-check') && options['no-version-check'].length === 0) {
+    console.error('Error: --no-version-check flag requires at least one package to be specified');
+    process.exit(1);
+}
+
+// Convert array of packages to Set
+const packagesToExcludeFromVersionValidation = new Set(options['no-version-check']);
+
 // Execute the hotfix finish workflow
-finishReleaseBranch(git, 'hotfix'); 
+finishReleaseBranch(git, 'hotfix', packagesToExcludeFromVersionValidation); 
